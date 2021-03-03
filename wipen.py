@@ -21,7 +21,10 @@ if __name__ == '__main__':
         wipenParser.wipenParserClass.wipenParserMain(
             packets=packets,
             target_ssid=option['target_ssid'],
-            target_ssid_list=option['target_ssid_list']
+            target_ssid_list=option['target_ssid_list'],
+            target_bssid=option['target_bssid'],
+            target_bssid_list=option['target_bssid_list'],
+            depth=option['depth']
         )
     except Exception as e:
         print('[!] Error reading {}:\r\n{}'.format(option['pcap_filename'], e))

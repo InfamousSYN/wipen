@@ -15,6 +15,12 @@ class wipenOptionClass():
         return 0
 
     @classmethod
+    def checkBSSIDandBSSIDLIST(self, parser):
+        if(self.target_bssid is not None and self.target_bssid_list is not None):
+            parser.error('[!] Specify only -b or -B')
+        return 0
+
+    @classmethod
     def setOptions(self):
         parser = ArgumentParser(prog=sys.argv[0],
             description='',
@@ -51,6 +57,27 @@ class wipenOptionClass():
             help='Specify a single SSID to analysis'
         )
 
+        wipenParserOptions.add_argument('-b', '--bssid',
+            dest='target_bssid',
+            type=str,
+            default=None,
+            help='Specify a single BSSID to analysis'
+        )
+
+        wipenParserOptions.add_argument('-B', '--bssid-list',
+            dest='target_bssid_list',
+            type=str,
+            default=None,
+            help='Specify a single BSSID to analysis'
+        )
+
+        wipenParserOptions.add_argument('--depth',
+            dest='depth',
+            type=int,
+            default=3,
+            help='Depth to match the number of fields of a BSSID address (default: 3)'
+        )
+
         # Basic error handling of the programs initalisation
         try:
             arg_test = sys.argv[1]
@@ -65,5 +92,6 @@ class wipenOptionClass():
             setattr(self, key, value)
 
         wipenOptionClass.checkSSIDandSSIDLIST(parser)
+        wipenOptionClass.checkBSSIDandBSSIDLIST(parser)
 
         return options
