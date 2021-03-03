@@ -46,6 +46,25 @@ class wipenParserClass():
         return 0
 
     @classmethod
+    def wipenParserIdentifyConnectedClients(self):
+        target_bssid_array = []
+        subType = [32]
+        if(self.target_bssid is not None):
+            target_bssid_array.append(self.target_bssid)
+        elif(self.target_bssid_list is not None):
+            file_contents = open(self.target_bssid_list, 'r').readlines()
+            for content in file_contents:
+                target_bssid_array.append(content.rstrip('\n'))
+        for tba in target_bssid_array:
+            print('[+] The target bssid \'{}\' the following connected clients were found:'.format(tba))
+            for pkt in self.packets:
+                if(pkt.haslayer(Dot11) and pkt.type == 2):
+                    if(pkt.subtype == 0):
+                        if(pkt.addr2 == tba):
+                            print('bssid={} client={}'.format(pkt.addr2, pkt.addr1))
+        return  0
+
+    @classmethod
     def wipenParserMain(self, packets, target_ssid, target_ssid_list,
                         target_bssid, target_bssid_list, depth):
         self.packets = packets
@@ -59,4 +78,5 @@ class wipenParserClass():
             self.wipenParserIdentifyBSSID()
         if((self.target_bssid or self.target_bssid_list) is not None):
             self.wipenParserIdentifySimilarBSSID()
+            self.wipenParserIdentifyConnectedClients()
         return 0
