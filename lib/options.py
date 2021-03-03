@@ -40,5 +40,5 @@ class wipenOptionClass():
 
         args, leftovers = parser.parse_known_args()
         options = args.__dict__
-        print(self)
+
         return options
