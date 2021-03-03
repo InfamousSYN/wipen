@@ -2,6 +2,7 @@
 from kamene.all import *
 from lib import settings
 from lib import options as o
+from lib.parser import wipenParser
 
 def printError(e):
     print('[!] Error:\r\n{}'.format(e))
@@ -17,6 +18,11 @@ if __name__ == '__main__':
         exit(1)
     try:
         packets = rdpcap(option['pcap_filename'])
+        wipenParser.wipenParserClass.wipenParserMain(
+            packets=packets,
+            target_ssid=option['target_ssid'],
+            target_ssid_list=option['target_ssid_list']
+        )
     except Exception as e:
-        print('[!] Error reading pcap file: {}'.format(option['pcap_filename']))
+        print('[!] Error reading {}:\r\n{}'.format(option['pcap_filename'], e))
 exit(0)
