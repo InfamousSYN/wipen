@@ -78,6 +78,20 @@ class wipenOptionClass():
             help='Depth to match the number of fields of a BSSID address (default: 3)'
         )
 
+        wipenParserOptions.add_argument('-c', '--client',
+            dest='target_client',
+            type=str,
+            default=None,
+            help='Specify a single client (STA) to analysis'
+        )
+
+        wipenParserOptions.add_argument('-C', '--client-list',
+            dest='target_client_list',
+            type=str,
+            default=None,
+            help='Specify a list of clients (STA) to analysis'
+        )
+
         # Basic error handling of the programs initalisation
         try:
             arg_test = sys.argv[1]

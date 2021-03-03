@@ -24,7 +24,9 @@ if __name__ == '__main__':
             target_ssid_list=option['target_ssid_list'],
             target_bssid=option['target_bssid'],
             target_bssid_list=option['target_bssid_list'],
-            depth=option['depth']
+            depth=option['depth'],
+            target_client=option['target_client'],
+            target_client_list=option['target_client_list']
         )
     except Exception as e:
         print('[!] Error reading {}:\r\n{}'.format(option['pcap_filename'], e))

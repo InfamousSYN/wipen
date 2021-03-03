@@ -65,18 +65,40 @@ class wipenParserClass():
         return  0
 
     @classmethod
+    def wipenParserConnectedClientsProbes(self):
+        target_client_array = []
+        if(self.target_client is not None):
+            target_client_array.append(self.target_client)
+        elif(self.target_client_list is not None):
+            file_contents = open(self.target_client_list, 'r').readlines()
+            for content in file_contents:
+                target_client_array.append(content.rstrip('\n'))
+        for tca in target_client_array:
+            print('[+] The target client \'{}\' is probing for the following SSID:'.format(tca))
+            for pkt in self.packets:
+                if(pkt.haslayer(Dot11ProbeReq)):
+                    if(pkt.addr2 == tca):
+                        print('client={} ssid={}'.format(pkt.addr2, pkt.info.decode('utf-8')))
+        return 0
+
+    @classmethod
     def wipenParserMain(self, packets, target_ssid, target_ssid_list,
-                        target_bssid, target_bssid_list, depth):
+                        target_bssid, target_bssid_list, depth,
+                        target_client, target_client_list):
         self.packets = packets
         self.target_ssid = target_ssid
         self.target_ssid_list = target_ssid_list
         self.target_bssid = target_bssid
         self.target_bssid_list = target_bssid_list
         self.depth = depth
+        self.target_client = target_client
+        self.target_client_list = target_client_list
 
         if((self.target_ssid or self.target_ssid_list) is not None):
             self.wipenParserIdentifyBSSID()
         if((self.target_bssid or self.target_bssid_list) is not None):
             self.wipenParserIdentifySimilarBSSID()
             self.wipenParserIdentifyConnectedClients()
+        if((self.target_client or self.target_client_list) is not None):
+            self.wipenParserConnectedClientsProbes()
         return 0
