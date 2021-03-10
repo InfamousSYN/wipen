@@ -8,6 +8,24 @@ class wipenParserClass():
         self.packets = None
         pass
 
+    @staticmethod
+    def getChannel(frequency):
+        channel_dict = {
+            2412:1, 2417:2, 2422:3, 2427:4, 2432:5,
+            2442:6, 2447:7, 2452:9, 2457:10, 2462:11,
+            2467:12, 2472:13, 2477:14,
+            5180:36, 5200:40, 5220:44, 5240:48, 5260:52,
+            5280:56, 5300:60, 5320:64, 5745:149, 5765:153,
+            5785:157, 5805:161, 5825:165
+        }
+        try:
+            for key in channel_dict.keys():
+                if(key == frequency):
+                    val = channel_dict[key]
+            return val
+        except Exception as e:
+            return frequency
+
     @classmethod
     def wipenParserIdentifyBSSID(self):
         target_ssid_array = []
@@ -22,7 +40,13 @@ class wipenParserClass():
             for pkt in self.packets:
                 if(pkt.haslayer(Dot11Beacon)):
                     if(tsa == pkt.info.decode('utf-8')):
-                        print('ssid={} transmitter={} source={}'.format(pkt.info.decode('utf-8'), pkt.addr3, pkt.addr4))
+                        if(pkt.haslayer(RadioTap) == 0):
+                            print('[!] The target cap file did not capture the RadioTap layer. In the future, capture 802.11 frames using Wireshark to include this information.')
+                            print('ssid={} transmitter={} source={}'.format(pkt.info.decode('utf-8'), pkt.addr3, pkt.addr4))
+                        else:
+                            bytelist = (bytes(pkt.getlayer(RadioTap)))
+                            channel_freq = int('0x{}{}'.format(hex(bytelist[19])[2:].zfill(2), hex(bytelist[18])[2:].zfill(2)), 16)
+                            print('ssid={} transmitter={} source={} freq={} channel={}'.format(pkt.info.decode('utf-8'), pkt.addr3, pkt.addr4, channel_freq, wipenParserClass.getChannel(channel_freq)))
         return 0
 
     @classmethod
