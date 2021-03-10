@@ -25,6 +25,7 @@ class wipenParserClass():
 
     @staticmethod
     def getChannel(frequency):
+        # Derived from the 'channel frequency' field of the RadioTap header layer
         channel_dict = {
             2412:1, 2417:2, 2422:3, 2427:4, 2432:5,
             2442:6, 2447:7, 2452:9, 2457:10, 2462:11,
