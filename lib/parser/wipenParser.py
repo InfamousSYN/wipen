@@ -9,6 +9,21 @@ class wipenParserClass():
         pass
 
     @staticmethod
+    def getStandard(standard):
+        # Derived from the 'channel flags' field of the RadioTap header layer
+        standard_dict = {
+            160:'802.11b', 320:'802.11a', 192:'802.11g',
+            1152:'802.11n', 288:'802.11ac'
+        }
+        try:
+            for key in standard_dict.keys():
+                if(key == standard):
+                    val = standard_dict[key]
+            return val
+        except Exception as e:
+            return standard
+
+    @staticmethod
     def getChannel(frequency):
         channel_dict = {
             2412:1, 2417:2, 2422:3, 2427:4, 2432:5,
@@ -46,7 +61,8 @@ class wipenParserClass():
                         else:
                             bytelist = (bytes(pkt.getlayer(RadioTap)))
                             channel_freq = int('0x{}{}'.format(hex(bytelist[19])[2:].zfill(2), hex(bytelist[18])[2:].zfill(2)), 16)
-                            print('ssid={} transmitter={} source={} freq={} channel={}'.format(pkt.info.decode('utf-8'), pkt.addr3, pkt.addr4, channel_freq, wipenParserClass.getChannel(channel_freq)))
+                            standard = int('0x{}{}'.format(hex(bytelist[21])[2:].zfill(2), hex(bytelist[20])[2:].zfill(2)), 16)
+                            print('ssid={} transmitter={} source={} protocol={} freq={} channel={}'.format(pkt.info.decode('utf-8'), pkt.addr3, pkt.addr4, wipenParserClass.getStandard(standard), channel_freq, wipenParserClass.getChannel(channel_freq)))
         return 0
 
     @classmethod
