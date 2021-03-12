@@ -15,17 +15,11 @@ class wipenOptionClass():
         return 0
 
     @classmethod
-    def checkBSSIDandBSSIDLIST(self, parser):
-        if(self.target_bssid is not None and self.target_bssid_list is not None):
-            parser.error('[!] Specify only -b or -B')
-        return 0
-
-    @classmethod
     def setOptions(self):
         parser = ArgumentParser(prog=sys.argv[0],
-            description='',
-            usage='',
-            add_help=False
+            description='automated wireless pcap dissector',
+            usage='python3 wipen.py -f example.pcap -s example',
+            add_help=True
         )
 
         wipenGeneralOptions = parser.add_argument_group(
@@ -57,20 +51,6 @@ class wipenOptionClass():
             help='Specify a single SSID to analysis'
         )
 
-        wipenParserOptions.add_argument('-b', '--bssid',
-            dest='target_bssid',
-            type=str,
-            default=None,
-            help='Specify a single BSSID to analysis'
-        )
-
-        wipenParserOptions.add_argument('-B', '--bssid-list',
-            dest='target_bssid_list',
-            type=str,
-            default=None,
-            help='Specify a single BSSID to analysis'
-        )
-
         wipenParserOptions.add_argument('--depth',
             dest='depth',
             type=int,
@@ -78,26 +58,12 @@ class wipenOptionClass():
             help='Depth to match the number of fields of a BSSID address (default: 3)'
         )
 
-        wipenParserOptions.add_argument('-c', '--client',
-            dest='target_client',
-            type=str,
-            default=None,
-            help='Specify a single client (STA) to analysis'
-        )
-
-        wipenParserOptions.add_argument('-C', '--client-list',
-            dest='target_client_list',
-            type=str,
-            default=None,
-            help='Specify a list of clients (STA) to analysis'
-        )
-
         # Basic error handling of the programs initalisation
         try:
             arg_test = sys.argv[1]
         except IndexError:
             parser.print_help()
-            return 1
+            sys.exit(1)
 
         args, leftovers = parser.parse_known_args()
         options = args.__dict__
@@ -106,6 +72,5 @@ class wipenOptionClass():
             setattr(self, key, value)
 
         wipenOptionClass.checkSSIDandSSIDLIST(parser)
-        wipenOptionClass.checkBSSIDandBSSIDLIST(parser)
 
         return options

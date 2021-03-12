@@ -17,17 +17,20 @@ if __name__ == '__main__':
         printError(e)
         exit(1)
     try:
+        print('[+] Analysing file: {}'.format(option['pcap_filename']))
         packets = rdpcap(option['pcap_filename'])
-        wipenParser.wipenParserClass.wipenParserMain(
+        count = 0
+        for pkt in packets:
+            count += 1
+
+        jsonPayload = wipenParser.wipenParserClass.wipenParserMain(
             packets=packets,
             target_ssid=option['target_ssid'],
             target_ssid_list=option['target_ssid_list'],
-            target_bssid=option['target_bssid'],
-            target_bssid_list=option['target_bssid_list'],
-            depth=option['depth'],
-            target_client=option['target_client'],
-            target_client_list=option['target_client_list']
+            depth=option['depth']
         )
+        print('[+] Result of analysis:\r\n{}'.format(jsonPayload))
+        print('[+] {} packets analysed from file: {}'.format(count, option['pcap_filename']))
     except Exception as e:
         print('[!] Error reading {}:\r\n{}'.format(option['pcap_filename'], e))
 exit(0)
