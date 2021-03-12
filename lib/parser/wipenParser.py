@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from kamene.all import *
 import re
+import json
 from lib import settings
 
 class wipenParserClass():
@@ -51,95 +52,154 @@ class wipenParserClass():
             file_contents = open(self.target_ssid_list, 'r').readlines()
             for content in file_contents:
                 target_ssid_array.append(content.rstrip('\n'))
+
         for tsa in target_ssid_array:
-            print('[+] The target ssid \'{}\' is broadcasted by the following infrastructure:'.format(tsa))
+            self.wipenJSONPayload.update({tsa: {"bssids":[]}} )
             for pkt in self.packets:
                 if(pkt.haslayer(Dot11Beacon)):
                     if(tsa == pkt.info.decode('utf-8')):
                         if(pkt.haslayer(RadioTap) == 0):
-                            print('[!] The target cap file did not capture the RadioTap layer. In the future, capture 802.11 frames using Wireshark to include this information.')
-                            print('ssid={} transmitter={} source={}'.format(pkt.info.decode('utf-8'), pkt.addr3, pkt.addr4))
+                            self.wipenJSONPayload[tsa]['bssids'].append({
+                                'bssid': pkt.addr3,
+                                'source': pkt.addr4,
+                                'protocol': None,
+                                'channel': None,
+                                'associated_clients': [],
+                                'similar_bssids': []
+                            })
                         else:
                             bytelist = (bytes(pkt.getlayer(RadioTap)))
                             channel_freq = int('0x{}{}'.format(hex(bytelist[19])[2:].zfill(2), hex(bytelist[18])[2:].zfill(2)), 16)
                             standard = int('0x{}{}'.format(hex(bytelist[21])[2:].zfill(2), hex(bytelist[20])[2:].zfill(2)), 16)
-                            print('ssid={} transmitter={} source={} protocol={} freq={} channel={}'.format(pkt.info.decode('utf-8'), pkt.addr3, pkt.addr4, wipenParserClass.getStandard(standard), channel_freq, wipenParserClass.getChannel(channel_freq)))
+
+                            self.wipenJSONPayload[tsa]['bssids'].append({
+                                'bssid': pkt.addr3,
+                                'source': pkt.addr4,
+                                'protocol': wipenParserClass.getStandard(standard),
+                                'channel': wipenParserClass.getChannel(channel_freq),
+                                'associated_clients': [],
+                                'similar_bssids': []
+                            })
+
+            result = self.wipenJSONPayload
+
+            ## removes duplicated entries from BSSIDS list
+            new_list = []
+            for line in result[tsa]['bssids']:
+                if(line not in new_list):
+                    new_list.append(line)
+            self.wipenJSONPayload[tsa]['bssids'] = []
+            self.wipenJSONPayload[tsa]['bssids'].append(new_list[0])
         return 0
 
     @classmethod
     def wipenParserIdentifySimilarBSSID(self):
         target_bssid_array = []
-        if(self.target_bssid is not None):
-            target_bssid_array.append(self.target_bssid)
-        elif(self.target_bssid_list is not None):
-            file_contents = open(self.target_bssid_list, 'r').readlines()
-            for content in file_contents:
-                target_bssid_array.append(content.rstrip('\n'))
-        for tba in target_bssid_array:
-            print('[+] The target bssid \'{}\' is similar to the following bssid and is broadcasting the following SSID'.format(tba))
-            for pkt in self.packets:
-                if(pkt.haslayer(Dot11Beacon)):
-                    if(tba != pkt.addr3):
-                        mangled_packet_address = pkt.addr3.split(':', self.depth)[:-1]
-                        mangled_target_address = tba.split(':', self.depth)[:-1]
-                        if(mangled_packet_address == mangled_target_address):
-                            print('transmitter={} source={} ssid={} '.format(pkt.addr3, pkt.addr4, pkt.info.decode('utf-8')))
+
+        for ssid in self.wipenJSONPayload:
+            for bssid in self.wipenJSONPayload[ssid]['bssids']:
+                target_bssid_array.append(bssid.get('bssid'))
+
+            # iterate through target_bssid_array which is { (ssid): { 'bssids': [(bssid)]}}
+            for tba in target_bssid_array:
+                for pkt in self.packets:
+                    if(pkt.haslayer(Dot11Beacon)):
+                        # check to make that the bssid being search is not the same as found in pkt.addr3 field
+                        if(tba != pkt.addr3):
+                            mangled_packet_address = pkt.addr3.split(':', self.depth)[:-1]
+                            mangled_target_address = tba.split(':', self.depth)[:-1]
+                            # check to see if the first N fields of the MAC address based on the depth argument are the same
+                            if(mangled_packet_address == mangled_target_address):
+                                # add the found pkt.addr3 address to the `similar_bssids` filed of the json
+                                # but we don't want to add the pkt.addr3 if it the same as the tba
+                                # this will prevent wipen from flagging the bssid as a similar bssid as well
+                                for bssid in self.wipenJSONPayload[ssid]['bssids']:
+                                    if(bssid.get('bssid') == tba):
+                                        bssid.get('similar_bssids').append({
+                                                'bssid': pkt.addr3,
+                                                'ssid': pkt.info.decode('utf-8')
+                                            })
         return 0
 
     @classmethod
     def wipenParserIdentifyConnectedClients(self):
         target_bssid_array = []
-        subType = [32]
-        if(self.target_bssid is not None):
-            target_bssid_array.append(self.target_bssid)
-        elif(self.target_bssid_list is not None):
-            file_contents = open(self.target_bssid_list, 'r').readlines()
-            for content in file_contents:
-                target_bssid_array.append(content.rstrip('\n'))
-        for tba in target_bssid_array:
-            print('[+] The target bssid \'{}\' the following connected clients were found:'.format(tba))
+        associated_clients_list = []
+        Dot11subType = [0, 32, 36]
+        bad_client_addr = ['ff:ff:ff:ff:ff:ff', '00:00:00:00:00:00']
+        for ssid in self.wipenJSONPayload:
+            for bssid in self.wipenJSONPayload[ssid]['bssids']:
+                target_bssid_array.append(bssid.get('bssid'))
+
+            # iterate through target_bssid_array which is { (ssid): { 'bssids': [(bssid)]}}
             for pkt in self.packets:
-                if(pkt.haslayer(Dot11) and pkt.type == 2):
-                    if(pkt.subtype == 0):
-                        if(pkt.addr2 == tba):
-                            print('bssid={} client={}'.format(pkt.addr2, pkt.addr1))
+                if((pkt.addr2 in target_bssid_array) and (pkt.subtype in Dot11subType)):
+                    target_bssid_array_index = target_bssid_array.index(pkt.addr2)
+                    # skip any bad addr from being added to associated client list
+                    if(pkt.addr1 in bad_client_addr):
+                        pass
+                    else:
+                        if(self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index].get('associated_clients') == []):
+                            self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index].get('associated_clients').append({
+                                'client_mac': pkt.addr1,
+                                'probes': []
+                                })
+                            associated_clients_list.append(pkt.addr1)
+                        else:
+                            # ensure only 1 of each client address is added to the entry
+                            for i in self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index].get('associated_clients')[0]:
+                                if(self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index].get('associated_clients')[0].get('client_mac') not in associated_clients_list):
+                                    associated_clients_list.append(self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index].get('associated_clients')[0].get('client_mac'))
+                            # if already a known client, pass
+                            if(pkt.addr1 in associated_clients_list):
+                                pass
+                            else:
+                                self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index].get('associated_clients').append({
+                                    'client_mac': pkt.addr1,
+                                    'probes': []
+                                    })
+                                associated_clients_list.append(pkt.addr1)
         return  0
 
     @classmethod
     def wipenParserConnectedClientsProbes(self):
+        target_bssid_array = []
         target_client_array = []
-        if(self.target_client is not None):
-            target_client_array.append(self.target_client)
-        elif(self.target_client_list is not None):
-            file_contents = open(self.target_client_list, 'r').readlines()
-            for content in file_contents:
-                target_client_array.append(content.rstrip('\n'))
-        for tca in target_client_array:
-            print('[+] The target client \'{}\' is probing for the following SSID:'.format(tca))
-            for pkt in self.packets:
-                if(pkt.haslayer(Dot11ProbeReq)):
-                    if(pkt.addr2 == tca):
-                        print('client={} ssid={}'.format(pkt.addr2, pkt.info.decode('utf-8')))
+
+        for ssid in self.wipenJSONPayload:
+            for bssid in self.wipenJSONPayload[ssid]['bssids']:
+                target_bssid_array.append(bssid)
+                for client in bssid.get('associated_clients'):
+                    target_client_array.append(client.get('client_mac'))
+
+                for pkt in self.packets:
+                    if( (pkt.haslayer(Dot11ProbeReq)) and (pkt.addr2 in target_client_array) ):
+                        target_bssid_array_index = target_bssid_array.index(bssid)
+                        target_client_array_index = target_client_array.index(pkt.addr2)
+                        #print(self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index]['associated_clients'][target_client_array_index].get('probes'))
+                        if(pkt.info.decode('utf-8') == ''):
+                            pass
+                        else:
+                            if(pkt.info.decode('utf-8') in self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index]['associated_clients'][target_client_array_index].get('probes')):
+                                pass
+                            else:
+                                self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index]['associated_clients'][target_client_array_index].get('probes').append(
+                                    pkt.info.decode('utf-8')
+                                    )
         return 0
 
     @classmethod
     def wipenParserMain(self, packets, target_ssid, target_ssid_list,
-                        target_bssid, target_bssid_list, depth,
-                        target_client, target_client_list):
+                        depth):
         self.packets = packets
         self.target_ssid = target_ssid
         self.target_ssid_list = target_ssid_list
-        self.target_bssid = target_bssid
-        self.target_bssid_list = target_bssid_list
         self.depth = depth
-        self.target_client = target_client
-        self.target_client_list = target_client_list
+        self.wipenJSONPayload = {}
 
         if((self.target_ssid or self.target_ssid_list) is not None):
             self.wipenParserIdentifyBSSID()
-        if((self.target_bssid or self.target_bssid_list) is not None):
             self.wipenParserIdentifySimilarBSSID()
             self.wipenParserIdentifyConnectedClients()
-        if((self.target_client or self.target_client_list) is not None):
             self.wipenParserConnectedClientsProbes()
-        return 0
+        return json.dumps(self.wipenJSONPayload)
