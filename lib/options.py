@@ -54,8 +54,8 @@ class wipenOptionClass():
         wipenParserOptions.add_argument('--depth',
             dest='depth',
             type=int,
-            default=3,
-            help='Depth to match the number of fields of a BSSID address (default: 3)'
+            default=settings.BSSID_INSPECTION_DEPTH,
+            help='Depth to match the number of fields of a BSSID address (default: {})'.format(settings.BSSID_INSPECTION_DEPTH)
         )
 
         # Basic error handling of the programs initalisation
