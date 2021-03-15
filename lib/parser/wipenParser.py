@@ -179,7 +179,6 @@ class wipenParserClass():
                             target_client_array_index = target_client_array.index(pkt.addr2)
                         else:
                             target_client_array_index = target_client_array.index(pkt.addr3)
-                        #print(self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index]['associated_clients'][target_client_array_index].get('probes'))
                         if(pkt.info.decode('utf-8') == ''):
                             pass
                         else:
