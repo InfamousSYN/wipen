@@ -173,9 +173,12 @@ class wipenParserClass():
                     target_client_array.append(client.get('client_mac'))
 
                 for pkt in self.packets:
-                    if( (pkt.haslayer(Dot11ProbeReq)) and (pkt.addr2 in target_client_array) ):
+                    if( (pkt.haslayer(Dot11ProbeReq) and pkt.addr2 in target_client_array) or (pkt.haslayer(Dot11Beacon) and pkt.addr3 in target_client_array)):
                         target_bssid_array_index = target_bssid_array.index(bssid)
-                        target_client_array_index = target_client_array.index(pkt.addr2)
+                        if(pkt.haslayer(Dot11ProbeReq)):
+                            target_client_array_index = target_client_array.index(pkt.addr2)
+                        else:
+                            target_client_array_index = target_client_array.index(pkt.addr3)
                         #print(self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index]['associated_clients'][target_client_array_index].get('probes'))
                         if(pkt.info.decode('utf-8') == ''):
                             pass
