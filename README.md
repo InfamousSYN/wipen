@@ -1,7 +1,14 @@
 # wipen
 Wipen is an automated tool used to extract target information from pcap files and organise the information in an easily digestable JSON format to aid penetration testing activities and identifying information to report on. 
 
+## Installation
+```
+python3 -m install kamene
+git clone https://github.com/InfamousSYN/wipen
+```
+
 ## Example
+
 ### Usage
 ```
 ┌──(vagrant㉿vagrant-kali-rolling-amd64)-[~/wipen]
