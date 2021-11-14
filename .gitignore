@@ -5,3 +5,4 @@ __pycache__/
 
 # Wipen Files
 log/**
+*.json
