@@ -29,7 +29,11 @@ if __name__ == '__main__':
             target_ssid_list=option['target_ssid_list'],
             depth=option['depth']
         )
+        filename = '{}.json'.format(option['target_ssid'])
         print('[+] Result of analysis:\r\n{}'.format(jsonPayload))
+        print('[+] Writing to file:\r\n{}'.format(filename))
+        with open(filename, 'w') as file:
+            file.write(jsonPayload)
         print('[+] {} packets analysed from file: {}'.format(count, option['pcap_filename']))
     except Exception as e:
         print('[!] Error reading {}:\r\n{}'.format(option['pcap_filename'], e))
