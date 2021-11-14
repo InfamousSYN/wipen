@@ -106,6 +106,7 @@ class wipenParserClass():
     @classmethod
     def wipenParserIdentifySimilarBSSID(self):
         target_bssid_array = []
+        self.known_bssid_array = []
 
         for ssid in self.wipenJSONPayload:
             for bssid in self.wipenJSONPayload[ssid]['bssids']:
@@ -125,11 +126,13 @@ class wipenParserClass():
                                 # but we don't want to add the pkt.addr3 if it the same as the tba
                                 # this will prevent wipen from flagging the bssid as a similar bssid as well
                                 for bssid in self.wipenJSONPayload[ssid]['bssids']:
-                                    if(bssid.get('bssid') == tba):
+                                    if((bssid.get('bssid') == tba) and (not self.known_bssid_array.__contains__(pkt.addr3))):
                                         bssid.get('similar_bssids').append({
                                                 'bssid': pkt.addr3,
                                                 'ssid': pkt.info.decode('utf-8')
                                             })
+                                        self.known_bssid_array.append(pkt.addr3)
+            self.known_bssid_array.clear()
         return 0
 
     @classmethod
