@@ -57,6 +57,7 @@ class wipenParserClass():
     @classmethod
     def wipenParserIdentifyBSSID(self):
         target_ssid_array = []
+        target_ssid_known_bssid = []
         if(self.target_ssid is not None):
             target_ssid_array.append(self.target_ssid)
         elif(self.target_ssid_list is not None):
@@ -67,40 +68,31 @@ class wipenParserClass():
         for tsa in target_ssid_array:
             self.wipenJSONPayload.update({tsa: {"bssids":[]}} )
             for pkt in self.packets:
-                if(pkt.haslayer(Dot11Beacon)):
-                    if(tsa == pkt.info.decode('utf-8')):
-                        if(pkt.haslayer(RadioTap) == 0):
-                            self.wipenJSONPayload[tsa]['bssids'].append({
-                                'bssid': pkt.addr3,
-                                'source': pkt.addr4,
-                                'protocol': None,
-                                'channel': None,
-                                'associated_clients': [],
-                                'similar_bssids': []
-                            })
-                        else:
-                            bytelist = (bytes(pkt.getlayer(RadioTap)))
-                            channel_freq = int('0x{}{}'.format(hex(bytelist[19])[2:].zfill(2), hex(bytelist[18])[2:].zfill(2)), 16)
-                            standard = int('0x{}{}'.format(hex(bytelist[21])[2:].zfill(2), hex(bytelist[20])[2:].zfill(2)), 16)
-
-                            self.wipenJSONPayload[tsa]['bssids'].append({
-                                'bssid': pkt.addr3,
-                                'source': pkt.addr4,
-                                'protocol': wipenParserClass.getStandard(standard),
-                                'channel': wipenParserClass.getChannel(channel_freq),
-                                'associated_clients': [],
-                                'similar_bssids': []
-                            })
+                if((pkt.haslayer(Dot11Beacon)) and (tsa == pkt.info.decode('utf-8')) and (not target_ssid_known_bssid.__contains__(pkt.addr3))):
+                    if(pkt.haslayer(RadioTap) == 0):
+                        self.wipenJSONPayload[tsa]['bssids'].append({
+                            'bssid': pkt.addr3,
+                            'source': pkt.addr4,
+                            'protocol': None,
+                            'channel': None,
+                            'associated_clients': [],
+                            'similar_bssids': []
+                        })
+                    else:
+                        bytelist = (bytes(pkt.getlayer(RadioTap)))
+                        channel_freq = int('0x{}{}'.format(hex(bytelist[19])[2:].zfill(2), hex(bytelist[18])[2:].zfill(2)), 16)
+                        standard = int('0x{}{}'.format(hex(bytelist[21])[2:].zfill(2), hex(bytelist[20])[2:].zfill(2)), 16)
+                        self.wipenJSONPayload[tsa]['bssids'].append({
+                            'bssid': pkt.addr3,
+                            'source': pkt.addr4,
+                            'protocol': wipenParserClass.getStandard(standard),
+                            'channel': wipenParserClass.getChannel(channel_freq),
+                            'associated_clients': [],
+                            'similar_bssids': []
+                        })
+                    target_ssid_known_bssid.append(pkt.addr3)
 
             result = self.wipenJSONPayload
-
-            ## removes duplicated entries from BSSIDS list
-            new_list = []
-            for line in result[tsa]['bssids']:
-                if(line not in new_list):
-                    new_list.append(line)
-            self.wipenJSONPayload[tsa]['bssids'] = []
-            self.wipenJSONPayload[tsa]['bssids'].append(new_list[0])
         return 0
 
     @classmethod
