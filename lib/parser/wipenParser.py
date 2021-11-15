@@ -75,6 +75,7 @@ class wipenParserClass():
                             'source': pkt.addr4,
                             'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).ChannelFlags),
                             'channel': wipenParserClass.getChannel(pkt.getlayer(RadioTap).ChannelFrequency),
+                            'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto'])),
                             'associated_clients': [],
                             'similar_bssids': []
                         })
@@ -83,7 +84,8 @@ class wipenParserClass():
                             'bssid': pkt.addr3,
                             'source': pkt.addr4,
                             'protocol': None,
-                            'channel': None,
+                            'channel': pkt[0].getlayer(Dot11Beacon).network_stats().get('channel'),
+                            'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto'])),
                             'associated_clients': [],
                             'similar_bssids': []
                         })
@@ -121,14 +123,16 @@ class wipenParserClass():
                                                     'bssid': pkt.addr3,
                                                     'ssid': pkt.info.decode('utf-8'),
                                                     'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).ChannelFlags),
-                                                    'channel': wipenParserClass.getChannel(pkt.getlayer(RadioTap).ChannelFrequency)
+                                                    'channel': wipenParserClass.getChannel(pkt.getlayer(RadioTap).ChannelFrequency),
+                                                    'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto']))
                                                 })
                                         else:
                                             bssid.get('similar_bssids').append({
                                                     'bssid': pkt.addr3,
                                                     'ssid': pkt.info.decode('utf-8'),
                                                     'protocol': None,
-                                                    'channel': None
+                                                    'channel': pkt[0].getlayer(Dot11Beacon).network_stats().get('channel'),
+                                                    'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto']))
                                                 })
                                         self.known_bssid_array.append(pkt.addr3)
             self.known_bssid_array.clear()
