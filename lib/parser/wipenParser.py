@@ -70,14 +70,11 @@ class wipenParserClass():
             for pkt in self.packets:
                 if((pkt.haslayer(Dot11Beacon)) and (tsa == pkt.info.decode('utf-8')) and (not target_ssid_known_bssid.__contains__(pkt.addr3))):
                     if(pkt.haslayer(RadioTap)):
-                        bytelist = (bytes(pkt.getlayer(RadioTap)))
-                        channel_freq = int('0x{}{}'.format(hex(bytelist[19])[2:].zfill(2), hex(bytelist[18])[2:].zfill(2)), 16)
-                        standard = int('0x{}{}'.format(hex(bytelist[21])[2:].zfill(2), hex(bytelist[20])[2:].zfill(2)), 16)
                         self.wipenJSONPayload[tsa]['bssids'].append({
                             'bssid': pkt.addr3,
                             'source': pkt.addr4,
-                            'protocol': wipenParserClass.getStandard(standard),
-                            'channel': wipenParserClass.getChannel(channel_freq),
+                            'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).channel_flags),
+                            'channel': wipenParserClass.getChannel(pkt.getlayer(RadioTap).channel_freq),
                             'associated_clients': [],
                             'similar_bssids': []
                         })
@@ -120,14 +117,11 @@ class wipenParserClass():
                                 for bssid in self.wipenJSONPayload[ssid]['bssids']:
                                     if((bssid.get('bssid') == tba) and (not self.known_bssid_array.__contains__(pkt.addr3))):
                                         if(pkt.haslayer):
-                                            bytelist = (bytes(pkt.getlayer(RadioTap)))
-                                            channel_freq = int('0x{}{}'.format(hex(bytelist[19])[2:].zfill(2), hex(bytelist[18])[2:].zfill(2)), 16)
-                                            standard = int('0x{}{}'.format(hex(bytelist[21])[2:].zfill(2), hex(bytelist[20])[2:].zfill(2)), 16)
                                             bssid.get('similar_bssids').append({
                                                     'bssid': pkt.addr3,
                                                     'ssid': pkt.info.decode('utf-8'),
-                                                    'protocol': wipenParserClass.getStandard(standard),
-                                                    'channel': wipenParserClass.getChannel(channel_freq)
+                                                    'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).channel_flags),
+                                                    'channel': wipenParserClass.getChannel(pkt.getlayer(RadioTap).channel_freq)
                                                 })
                                         else:
                                             bssid.get('similar_bssids').append({
