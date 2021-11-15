@@ -3,7 +3,7 @@ Wipen is an automated tool used to extract target information from pcap files an
 
 ## Installation
 ```
-python3 -m install kamene
+python3 -m install scapy
 git clone https://github.com/InfamousSYN/wipen
 ```
 
