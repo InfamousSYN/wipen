@@ -170,14 +170,14 @@ class wipenParserClass():
                                 if(self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index].get('associated_clients')[0].get('client_mac') not in associated_clients_list):
                                     associated_clients_list.append(self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index].get('associated_clients')[0].get('client_mac'))
                             # if already a known client, pass
-                            if(pkt.addr1 in associated_clients_list):
-                                pass
-                            else:
+                            if(not associated_clients_list.__contains__(pkt.addr1)):
                                 self.wipenJSONPayload[ssid]['bssids'][target_bssid_array_index].get('associated_clients').append({
                                     'client_mac': pkt.addr1,
                                     'probes': []
                                     })
                                 associated_clients_list.append(pkt.addr1)
+                            else:
+                                pass
         return  0
 
     @classmethod
