@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from kamene.all import *
+from scapy.all import *
 import re
 import json
 from lib import settings
@@ -73,8 +73,8 @@ class wipenParserClass():
                         self.wipenJSONPayload[tsa]['bssids'].append({
                             'bssid': pkt.addr3,
                             'source': pkt.addr4,
-                            'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).channel_flags),
-                            'channel': wipenParserClass.getChannel(pkt.getlayer(RadioTap).channel_freq),
+                            'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).ChannelFlags),
+                            'channel': wipenParserClass.getChannel(pkt.getlayer(RadioTap).ChannelFrequency),
                             'associated_clients': [],
                             'similar_bssids': []
                         })
@@ -120,8 +120,8 @@ class wipenParserClass():
                                             bssid.get('similar_bssids').append({
                                                     'bssid': pkt.addr3,
                                                     'ssid': pkt.info.decode('utf-8'),
-                                                    'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).channel_flags),
-                                                    'channel': wipenParserClass.getChannel(pkt.getlayer(RadioTap).channel_freq)
+                                                    'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).ChannelFlags),
+                                                    'channel': wipenParserClass.getChannel(pkt.getlayer(RadioTap).ChannelFrequency)
                                                 })
                                         else:
                                             bssid.get('similar_bssids').append({

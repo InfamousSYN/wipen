@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from kamene.all import *
+from scapy.all import *
 from lib import settings
 from lib import options as o
 from lib.parser import wipenParser
@@ -19,9 +19,6 @@ if __name__ == '__main__':
     try:
         print('[+] Analysing file: {}'.format(option['pcap_filename']))
         packets = rdpcap(option['pcap_filename'])
-        count = 0
-        for pkt in packets:
-            count += 1
 
         jsonPayload = wipenParser.wipenParserClass.wipenParserMain(
             packets=packets,
@@ -34,7 +31,7 @@ if __name__ == '__main__':
         print('[+] Writing to file:\r\n{}'.format(filename))
         with open(filename, 'w') as file:
             file.write(jsonPayload)
-        print('[+] {} packets analysed from file: {}'.format(count, option['pcap_filename']))
+        print('[+] {} packets analysed from file: {}'.format(len(packets), option['pcap_filename']))
     except Exception as e:
         print('[!] Error reading {}:\r\n{}'.format(option['pcap_filename'], e))
 exit(0)
