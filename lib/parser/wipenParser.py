@@ -119,10 +119,23 @@ class wipenParserClass():
                                 # this will prevent wipen from flagging the bssid as a similar bssid as well
                                 for bssid in self.wipenJSONPayload[ssid]['bssids']:
                                     if((bssid.get('bssid') == tba) and (not self.known_bssid_array.__contains__(pkt.addr3))):
-                                        bssid.get('similar_bssids').append({
-                                                'bssid': pkt.addr3,
-                                                'ssid': pkt.info.decode('utf-8')
-                                            })
+                                        if(pkt.haslayer):
+                                            bytelist = (bytes(pkt.getlayer(RadioTap)))
+                                            channel_freq = int('0x{}{}'.format(hex(bytelist[19])[2:].zfill(2), hex(bytelist[18])[2:].zfill(2)), 16)
+                                            standard = int('0x{}{}'.format(hex(bytelist[21])[2:].zfill(2), hex(bytelist[20])[2:].zfill(2)), 16)
+                                            bssid.get('similar_bssids').append({
+                                                    'bssid': pkt.addr3,
+                                                    'ssid': pkt.info.decode('utf-8'),
+                                                    'protocol': wipenParserClass.getStandard(standard),
+                                                    'channel': wipenParserClass.getChannel(channel_freq)
+                                                })
+                                        else:
+                                            bssid.get('similar_bssids').append({
+                                                    'bssid': pkt.addr3,
+                                                    'ssid': pkt.info.decode('utf-8'),
+                                                    'protocol': None,
+                                                    'channel': None
+                                                })
                                         self.known_bssid_array.append(pkt.addr3)
             self.known_bssid_array.clear()
         return 0
