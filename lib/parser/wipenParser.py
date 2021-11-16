@@ -55,9 +55,52 @@ class wipenParserClass():
             return frequency
 
     @classmethod
+    def updateIdentifiedBSSID(self, pkt, tsa):
+        if(pkt.haslayer(RadioTap)):
+            self.wipenJSONPayload[tsa]['bssids'].append({
+                'bssid': pkt.addr3,
+                'source': pkt.addr4,
+                'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).ChannelFlags),
+                'channel': pkt[0].getlayer(Dot11Beacon).network_stats().get('channel'),
+                'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto'])),
+                'associated_clients': [],
+                'similar_bssids': []
+            })
+        else:
+            self.wipenJSONPayload[tsa]['bssids'].append({
+                'bssid': pkt.addr3,
+                'source': pkt.addr4,
+                'protocol': None,
+                'channel': pkt[0].getlayer(Dot11Beacon).network_stats().get('channel'),
+                'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto'])),
+                'associated_clients': [],
+                'similar_bssids': []
+            })
+
+    @classmethod
+    def updateIdentifiedSimilarBSSID(self, pkt, bssid):
+        if(pkt.haslayer(RadioTap)):
+            bssid.get('similar_bssids').append({
+                    'bssid': pkt.addr3,
+                    'ssid': pkt.info.decode('utf-8'),
+                    'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).ChannelFlags),
+                    'channel': pkt[0].getlayer(Dot11Beacon).network_stats().get('channel'),
+                    'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto']))
+                })
+        else:
+            bssid.get('similar_bssids').append({
+                    'bssid': pkt.addr3,
+                    'ssid': pkt.info.decode('utf-8'),
+                    'protocol': None,
+                    'channel': pkt[0].getlayer(Dot11Beacon).network_stats().get('channel'),
+                    'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto']))
+                })
+
+    @classmethod
     def wipenParserIdentifyBSSID(self):
         target_ssid_array = []
         target_ssid_known_bssid = []
+        decloaked_ssid_bssid = []
         if(self.target_ssid is not None):
             target_ssid_array.append(self.target_ssid)
         elif(self.target_ssid_list is not None):
@@ -68,27 +111,17 @@ class wipenParserClass():
         for tsa in target_ssid_array:
             self.wipenJSONPayload.update({tsa: {"bssids":[]}} )
             for pkt in self.packets:
-                if((pkt.haslayer(Dot11Beacon)) and (tsa == pkt.info.decode('utf-8')) and (not target_ssid_known_bssid.__contains__(pkt.addr3))):
-                    if(pkt.haslayer(RadioTap)):
-                        self.wipenJSONPayload[tsa]['bssids'].append({
-                            'bssid': pkt.addr3,
-                            'source': pkt.addr4,
-                            'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).ChannelFlags),
-                            'channel': wipenParserClass.getChannel(pkt.getlayer(RadioTap).ChannelFrequency),
-                            'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto'])),
-                            'associated_clients': [],
-                            'similar_bssids': []
-                        })
-                    else:
-                        self.wipenJSONPayload[tsa]['bssids'].append({
-                            'bssid': pkt.addr3,
-                            'source': pkt.addr4,
-                            'protocol': None,
-                            'channel': pkt[0].getlayer(Dot11Beacon).network_stats().get('channel'),
-                            'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto'])),
-                            'associated_clients': [],
-                            'similar_bssids': []
-                        })
+                if(pkt.haslayer(Dot11ProbeResp)):
+                    if((pkt.getlayer(Dot11ProbeResp).info.decode('utf-8') == tsa) and(not decloaked_ssid_bssid.__contains__(pkt.addr3))):
+                        decloaked_ssid_bssid.append(pkt.addr3)
+
+            for pkt in self.packets:
+                pktorig = pkt
+                if( (pkt.haslayer(Dot11Beacon)) and (tsa == pkt.info.decode('utf-8')) and (not target_ssid_known_bssid.__contains__(pkt.addr3)) ):
+                    self.updateIdentifiedBSSID(pkt=pktorig, tsa=tsa)
+                    target_ssid_known_bssid.append(pkt.addr3)
+                elif(pkt.haslayer(Dot11Beacon) and decloaked_ssid_bssid.__contains__(pkt.addr3) and (not target_ssid_known_bssid.__contains__(pkt.addr3))):
+                    self.updateIdentifiedBSSID(pkt=pktorig, tsa=tsa)
                     target_ssid_known_bssid.append(pkt.addr3)
 
             result = self.wipenJSONPayload
@@ -106,6 +139,7 @@ class wipenParserClass():
             # iterate through target_bssid_array which is { (ssid): { 'bssids': [(bssid)]}}
             for tba in target_bssid_array:
                 for pkt in self.packets:
+                    pktorig = pkt
                     if(pkt.haslayer(Dot11Beacon)):
                         # check to make that the bssid being search is not the same as found in pkt.addr3 field
                         if(tba != pkt.addr3):
@@ -118,22 +152,7 @@ class wipenParserClass():
                                 # this will prevent wipen from flagging the bssid as a similar bssid as well
                                 for bssid in self.wipenJSONPayload[ssid]['bssids']:
                                     if((bssid.get('bssid') == tba) and (not self.known_bssid_array.__contains__(pkt.addr3))):
-                                        if(pkt.haslayer):
-                                            bssid.get('similar_bssids').append({
-                                                    'bssid': pkt.addr3,
-                                                    'ssid': pkt.info.decode('utf-8'),
-                                                    'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).ChannelFlags),
-                                                    'channel': wipenParserClass.getChannel(pkt.getlayer(RadioTap).ChannelFrequency),
-                                                    'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto']))
-                                                })
-                                        else:
-                                            bssid.get('similar_bssids').append({
-                                                    'bssid': pkt.addr3,
-                                                    'ssid': pkt.info.decode('utf-8'),
-                                                    'protocol': None,
-                                                    'channel': pkt[0].getlayer(Dot11Beacon).network_stats().get('channel'),
-                                                    'crypto': next(iter(dict(pkt[0].getlayer(Dot11Beacon).network_stats())['crypto']))
-                                                })
+                                        self.updateIdentifiedSimilarBSSID(pkt=pktorig, bssid=bssid)
                                         self.known_bssid_array.append(pkt.addr3)
             self.known_bssid_array.clear()
         return 0
