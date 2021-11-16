@@ -161,7 +161,7 @@ class wipenParserClass():
                                     if((bssid.get('bssid') == tba) and (not self.known_bssid_array.__contains__(pkt.addr3))):
                                         self.updateIdentifiedSimilarBSSID(pkt=pktorig, bssid=bssid)
                                         self.known_bssid_array.append(pkt.addr3)
-            self.known_bssid_array.clear()
+                self.known_bssid_array.clear()
         return 0
 
     @classmethod
