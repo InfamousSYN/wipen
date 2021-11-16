@@ -63,10 +63,10 @@ class wipenParserClass():
                 'protocol': wipenParserClass.getStandard(pkt.getlayer(RadioTap).ChannelFlags),
                 'channel': pkt.getlayer(Dot11Beacon).network_stats().get('channel'),
                 'authentication': next(iter(dict(pkt.getlayer(Dot11Beacon).network_stats())['crypto'])),
-                'encryption':[
-                {'group_pairwise_cipher':'{}'.format('CCMP' if pkt.getlayer(Dot11Beacon).group_cipher_suite.cipher == 4 else 'TKIP')},
-                {'pairwise_cipher':'{}'.format('CCMP' if pkt.getlayer(Dot11Beacon).pairwise_cipher_suites[0].cipher == 4 else 'TKIP')}
-                ],
+                'encryption':[{
+                    'group_pairwise_cipher':'{}'.format('CCMP' if pkt.getlayer(Dot11Beacon).group_cipher_suite.cipher == 4 else 'TKIP'),
+                    'pairwise_cipher':'{}'.format('CCMP' if pkt.getlayer(Dot11Beacon).pairwise_cipher_suites[0].cipher == 4 else 'TKIP')
+                }],
                 'associated_clients': [],
                 'similar_bssids': []
             })
@@ -77,10 +77,10 @@ class wipenParserClass():
                 'protocol': None,
                 'channel': pkt[0].getlayer(Dot11Beacon).network_stats().get('channel'),
                 'authentication': next(iter(dict(pkt.getlayer(Dot11Beacon).network_stats())['crypto'])),
-                'encryption':[
-                {'group_pairwise_cipher':'{}'.format('CCMP' if pkt.getlayer(Dot11Beacon).group_cipher_suite.cipher == 4 else 'TKIP')},
-                {'pairwise_cipher':'{}'.format('CCMP' if pkt.getlayer(Dot11Beacon).pairwise_cipher_suites[0].cipher == 4 else 'TKIP')}
-                ],
+                'encryption':[{
+                    'group_pairwise_cipher':'{}'.format('CCMP' if pkt.getlayer(Dot11Beacon).group_cipher_suite.cipher == 4 else 'TKIP'),
+                    'pairwise_cipher':'{}'.format('CCMP' if pkt.getlayer(Dot11Beacon).pairwise_cipher_suites[0].cipher == 4 else 'TKIP')
+                }],
                 'associated_clients': [],
                 'similar_bssids': []
             })
