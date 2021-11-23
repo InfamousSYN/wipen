@@ -3,6 +3,7 @@ from scapy.all import *
 from lib import settings
 from lib import options as o
 from lib.parser import wipenParser
+import logging
 
 def printError(e):
     print('[!] Error:\r\n{}'.format(e))
@@ -33,5 +34,5 @@ if __name__ == '__main__':
             file.write(jsonPayload)
         print('[+] {} packets analysed from file: {}'.format(len(packets), option['pcap_filename']))
     except Exception as e:
-        print('[!] Error reading {}:\r\n{}'.format(option['pcap_filename'], e))
+        logging.exception('[!] Error reading {}:\r\n{}'.format(option['pcap_filename'], e))
 exit(0)
