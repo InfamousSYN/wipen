@@ -124,7 +124,7 @@ PCAP Parsing Settings:
 └─$ 
 ```
 
-**REQUIRED:** The input pcap must have the `RadioTap` layer for `wipen` to determine the channel frequency and 802.11 data protocol used by the target SSID. This means, a cap file produced by `[airodump-ng`](https://www.aircrack-ng.org/doku.php?id=airodump-ng) used as the input will not display a frequency or protocol value for any of the BSSID. 
+**REQUIRED:** The input pcap must have the `RadioTap` layer for `wipen` to determine the channel frequency and 802.11 data protocol used by the target SSID. This means, a cap file produced by [`airodump-ng`](https://www.aircrack-ng.org/doku.php?id=airodump-ng) used as the input will not display a frequency or protocol value for any of the BSSID. 
 
 **Note:** When analysising a large pcap file, it is recommended to use `tee` to pipe the STDOUT to a file for logging purposes. 
 
