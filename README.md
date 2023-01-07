@@ -211,7 +211,7 @@ The JSON object produced by `wipen` will be in the following schema:
 ```
 
 ### Additional tools
-There are addition tools that can support `wipen`, or leverage the produced JSON object. For more information, refer to the tool's [README](https://github.com/InfamousSYN/wipen/tools/README.md) documentation.
+There are addition tools that can support `wipen`, or leverage the produced JSON object. For more information, refer to the tool's [README](https://github.com/InfamousSYN/wipen/blob/main/tools/README.md) documentation.
 
 
 ## To Do
