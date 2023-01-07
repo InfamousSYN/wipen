@@ -5,14 +5,9 @@ from lib import settings
 
 class wipenOptionClass():
 
+    @classmethod
     def __init__(self, options):
         self.options = options
-
-    @classmethod
-    def checkSSIDandSSIDLIST(self, parser):
-        if(self.target_ssid is not None and self.target_ssid_list is not None):
-            parser.error('[!] Specify only -s or -S')
-        return 0
 
     @classmethod
     def setOptions(self):
@@ -33,23 +28,79 @@ class wipenOptionClass():
         wipenGeneralOptions.add_argument('-f', '--file',
             dest='pcap_filename',
             type=str,
+            nargs='+',
+            help='Provide one or more pcap to analysis',
+            required=True
+        )
+
+        wipenGeneralOptions.add_argument('-o', '--output',
+            dest='output_filename',
+            type=str,
             default=None,
-            help='Specify target pcap to analysis'
+            help='Specify output filename',
+            required=True
+        )
+
+        wipenGeneralOptions.add_argument('-v', '--verbose',
+            dest='verbose',
+            action='store_true',
+            default=False,
+            help='Enable verbose'
+        )
+
+        wipenGeneralOptions.add_argument('--skip-similar-bssid',
+            dest='skip_similar_bssid',
+            action='store_true',
+            default=False,
+            help='Skip searching for similar BSSID'
+        )
+
+        wipenGeneralOptions.add_argument('--skip-similar-ssid',
+            dest='skip_similar_ssid',
+            action='store_true',
+            default=False,
+            help='Skip searching for similar SSID'
+        )
+
+        wipenGeneralOptions.add_argument('--show-final',
+            dest='show_final',
+            action='store_true',
+            default=False,
+            help='Show final JSON payload'
+        )
+
+        wipenGeneralOptions.add_argument('--threshold',
+            dest='periodic_file_update',
+            type=int,
+            default=settings.DEFAULT_PERIODIC_FILE_UPDATE_TIMER,
+            help='Set periodic update for output file time in minutes (default: {})'.format(settings.DEFAULT_PERIODIC_FILE_UPDATE_TIMER)
         )
 
         wipenParserOptions.add_argument('-s', '--ssid',
             dest='target_ssid',
-            type=str,
-            default=None,
-            help='Specify a single SSID to analysis'
+            nargs='+',
+            help='Specify a one ore more SSID to analysis',
+            required=True
         )
 
-        wipenParserOptions.add_argument('-S', '--ssid-list',
-            dest='target_ssid_list',
-            type=str,
-            default=None,
-            help='Specify a single SSID to analysis'
+        wipenParserOptions.add_argument('--ssid-pattern',
+            dest='ssid_pattern',
+            nargs='+',
+            help='Provide one or more possible SSID patterns to search for.'
         )
+
+        wipenParserOptions.add_argument('-I', '--ignore-bssid',
+            dest='ignore_bssid',
+            nargs='+',
+            default=settings.DEFAULT_IGNORED_BSSID,
+            help='Specify one or more BSSID to ignore during the parsing (default: {})'.format(settings.DEFAULT_IGNORED_BSSID)
+            )
+
+        wipenParserOptions.add_argument('--ignore-client',
+            dest='ignore_client',
+            nargs='+',
+            default=settings.DEFAULT_IGNORED_STA,
+            help='Specify one or more STA addresses to ignore during parsing (default: {})'.format(settings.DEFAULT_IGNORED_STA))
 
         wipenParserOptions.add_argument('--depth',
             dest='depth',
@@ -57,6 +108,12 @@ class wipenOptionClass():
             default=settings.BSSID_INSPECTION_DEPTH,
             help='Depth to match the number of fields of a BSSID address (default: {})'.format(settings.BSSID_INSPECTION_DEPTH)
         )
+
+        wipenParserOptions.add_argument('--disable-vendor-mac-refresh',
+            dest='disable_vendor_mac_refresh',
+            action='store_true',
+            default=False,
+            help='Disable refresh of vendor MAC table refresh (default: False)')
 
         # Basic error handling of the programs initalisation
         try:
@@ -66,11 +123,4 @@ class wipenOptionClass():
             sys.exit(1)
 
         args, leftovers = parser.parse_known_args()
-        options = args.__dict__
-
-        for key, value in options.items():
-            setattr(self, key, value)
-
-        wipenOptionClass.checkSSIDandSSIDLIST(parser)
-
-        return options
+        return args.__dict__
