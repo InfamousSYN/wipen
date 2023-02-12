@@ -133,7 +133,10 @@ class wipenParserClass():
 
     @classmethod
     def getVendor(self, bssid=None):
-        return self.mac.lookup(bssid)
+        try:
+            return self.mac.lookup(bssid)
+        except mac_vendor_lookup.VendorNotFoundError:
+            return None
 
     @classmethod
     def getJSONPayload(self):
