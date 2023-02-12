@@ -1,4 +1,9 @@
 #!/usr/bin/python3
+import warnings
+from cryptography.utils import CryptographyDeprecationWarning
+warnings.filterwarnings('ignore', category=CryptographyDeprecationWarning)
+from scapy.all import *
+
 
 def loadOptions():
     import argparse
@@ -37,6 +42,12 @@ def loadOptions():
         type=int,
         default=1,
         help='Control how quickly interface will hop between channels',
+    )
+
+    GeneralOptions.add_argument('-o', '--output',
+        dest='output_filename',
+        type=str,
+        help='Specify name of pcap file for captured packets'
     )
 
     # Basic error handling of the programs initalisation
@@ -94,6 +105,12 @@ if __name__ == '__main__':
         print('[!] {}'.format(e))
         exit(1)
 
+    if(not options['output_filename']):
+        output_filename=('{}.wipen.pcap'.format(options['json_filename'].split('.')[0]))
+        print('[+] Setting output file to: {}'.format(output_filename))
+    else:
+        output_filename=('{}.wipen.pcap'.format(options['json_filename'].split('.pcap')[0]))
+
     try:
         print('[-] Looping through extracted channels')
         while True:
@@ -101,8 +118,12 @@ if __name__ == '__main__':
                 if(len(str(channel)) >= 4):
                     pass
                 else:
-                    subprocess.run(['iwconfig', '{}'.format(options['interface']), 'channel', '{}'.format(channel)])
-                    time.sleep(options['hop_speed'])
+                    try:
+                        subprocess.run(['iwconfig', '{}'.format(options['interface']), 'channel', '{}'.format(channel)])
+                        packets = sniff(timeout=options['hop_speed'])
+                        wrpcap(output_filename, packets, append=True)
+                    except KeyboardInterrupt:
+                        raise KeyboardInterrupt
 
     except KeyboardInterrupt:
         print('[-] Resetting interface back to managed mode')
