@@ -169,6 +169,8 @@ The JSON object produced by `wipen` will be in the following schema:
 }
 ```
 
+**Note:** To target a SSID which contains a space within the name, place the value within single quotes ( `'` ) for the `-s` argument.
+
 
 ### Examples
 
