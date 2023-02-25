@@ -26,7 +26,7 @@ python3 -m install -r wipen/requirements.txt
 ## Usage
 
 ```Bash
-usage: sudo python3 /opt/wipen/wipen2.py -f [PCAP CAP] --ssid-pattern [P1] [P2] -s [TARGET SSID] -o [OUTFILE] |tee -a [OUTFILE].log
+usage: sudo python3 /opt/wipen/wipen.py -f [PCAP CAP] --ssid-pattern [P1] [P2] -s [TARGET SSID] -o [OUTFILE] |tee -a [OUTFILE].log
 
 automated wireless pcap dissector
 
@@ -179,7 +179,7 @@ The JSON object produced by `wipen` will be in the following schema:
 Using the `-m 0` argument, `wipen` can be placed into live capture mode. In live capture mode, `wipen` will automatically channel hop for a defined period (`-T`); during which it will perform analysis of captured packets for target attribution. 
 
 ```Bash
-sudo python3 /opt/wipen/wipen2.py -m 0 -i [INTERFACE] -o [OUTFILE] -s [TARGET SSID] --ssid-pattern [P1] [P2]  |tee -a [OUTFILE].log
+sudo python3 /opt/wipen/wipen.py -m 0 -i [INTERFACE] -o [OUTFILE] -s [TARGET SSID] --ssid-pattern [P1] [P2]  |tee -a [OUTFILE].log
 ```
 
 **Note:** By default, while in live mode, `wipen` will not save the collected packets to a PCAP file. The user can invoke `wipen` to create a PCAP using the `--save-pcap` argument for data posterity. 
@@ -189,7 +189,7 @@ sudo python3 /opt/wipen/wipen2.py -m 0 -i [INTERFACE] -o [OUTFILE] -s [TARGET SS
 Using the `-m 1` argument, `wipen` will interrogate a specified PCAP file of captured packets for target attribution. 
 
 ```Bash
-sudo python3 /opt/wipen/wipen2.py -f [PCAP CAP] --ssid-pattern [P1] [P2] -s [TARGET SSID] -o [OUTFILE] |tee -a [OUTFILE].log
+sudo python3 /opt/wipen/wipen.py -f [PCAP CAP] --ssid-pattern [P1] [P2] -s [TARGET SSID] -o [OUTFILE] |tee -a [OUTFILE].log
 ```
 
 **REQUIRED:** The input PCAP must have the `RadioTap` layer for `wipen` to determine the channel frequency and 802.11 data protocol used by the target SSID. This means, a cap file produced by [`airodump-ng`](https://www.aircrack-ng.org/doku.php?id=airodump-ng) used as the input will not display a frequency or protocol value for any of the BSSID. 
