@@ -21,11 +21,12 @@ class wipenParserClass():
         self.periodic_file_update = periodic_file_update*60
 
         # Reset from tuple to list
-        _ssid_pattern_reset = self.ssid_pattern
-        self.ssid_pattern = list()
-        for ssids in _ssid_pattern_reset:
-            for ssid in ssids:
-                self.ssid_pattern.append(ssid)
+        if(self.ssid_pattern[0] is not None):
+            _ssid_pattern_reset = self.ssid_pattern
+            self.ssid_pattern = list()
+            for ssids in _ssid_pattern_reset:
+                for ssid in ssids:
+                    self.ssid_pattern.append(ssid)
 
         self.mac = mac_vendor_lookup.MacLookup()
         if(not self.disable_vendor_mac_refresh):
@@ -154,6 +155,16 @@ class wipenParserClass():
                     fo.write(self.getJSONPayload())
                     fo.close()
                     time.sleep(self.periodic_file_update)
+        except Exception as e:
+            print('[!] Error updating output file')
+
+    @classmethod
+    def writeJSONPayloadFileWrite(self):
+        try:
+            if(self.wipenJSONPayload != {} ):
+                fo = open(self.filename, 'w')
+                fo.write(self.getJSONPayload())
+                fo.close()
         except Exception as e:
             print('[!] Error updating output file')
 
@@ -306,7 +317,7 @@ class wipenParserClass():
             ssid=self.target_ssid
 
             for _known_bssid_pos, _known_bssid in enumerate(self.wipenJSONPayload[ssid]['bssid']):
-                if( (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr2 not in self.ignore_bssid ) and (packet.addr2 != _known_bssid.get('bssid')) ):
+                if( (self.wipenJSONPayload[ssid]['bssid'] is not []) and (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr2 not in self.ignore_bssid ) and (packet.addr2 != _known_bssid.get('bssid')) ):
                     # remove the bssid deep search here
 
                     mangled_packet_address = packet.addr3.split(':', self.depth)[:-1]
@@ -348,7 +359,7 @@ class wipenParserClass():
         import re
         ssid=self.target_ssid
 
-        if( (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr3 not in self.ignore_bssid ) and ( packet.info.decode('utf-8') != ssid and packet.info.decode('utf-8') is not None and packet.info.decode('utf-8') != '' ) ):
+        if( (self.ssid_pattern[0] is not None) and (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr3 not in self.ignore_bssid ) and ( packet.info.decode('utf-8') != ssid and packet.info.decode('utf-8') is not None and packet.info.decode('utf-8') != '' ) ):
             for ssid_pattern in self.ssid_pattern:
                 if( (re.match(ssid_pattern, packet.info.decode('utf-8'), re.IGNORECASE)) 
                     and (packet.info.decode('utf-8') not in [next(iter(_known_similar_ssid)) for _known_similar_ssid in self.wipenJSONPayload[ssid]['similar_ssid']] ) ):
