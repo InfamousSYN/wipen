@@ -138,7 +138,8 @@ The JSON object produced by `wipen` will be in the following schema:
                       'client_addr':str,
                       'identities':[{
                         'id':int,
-                        'identity':str
+                        'identity':str,
+                        'bssid':str
                       }],
                       'probes':[{
                         'id':int,

@@ -266,10 +266,11 @@ class wipenParserClass():
             })
 
     @classmethod
-    def add_CONNECTED_CLIENTS_IDENTITY(self, payload=None, identity=None):
+    def add_CONNECTED_CLIENTS_IDENTITY(self, payload=None, identity=None, bssid=None):
         return payload.append({
             'id':len(payload),
-            'identity':identity
+            'identity':identity,
+            'bssid':bssid
             })
 
     @classmethod
@@ -624,8 +625,9 @@ class wipenParserClass():
                         )) ):
                             print('[-] Found new identity for \'{}\' by client \'{}\' connected to {}\'s \'{}\' BSSID, adding...'.format(packet.getlayer(EAP).identity.decode('utf-8'), client_address, next(iter(_known_similar_ssid)), bssid_address))
                             self.add_CONNECTED_CLIENTS_IDENTITY(
+                                identity=packet.getlayer(EAP).identity.decode('utf-8'),
+                                bssid=bssid_address,
                                 payload=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['associated_clients'][_known_similar_ssid_bssid_associated_client_pos]['identities'],
-                                identity=packet.getlayer(EAP).identity.decode('utf-8')
                                 )
                         elif( ( client_address == _known_similar_ssid_bssid_associated_client.get('client_addr') ) and (packet.getlayer(EAP).identity.decode('utf-8') in self.deep_search(
                             target_key='identity', 
