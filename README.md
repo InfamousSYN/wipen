@@ -200,8 +200,3 @@ sudo python3 /opt/wipen/wipen.py -f [PCAP CAP] --ssid-pattern [P1] [P2] -s [TARG
 ### Additional tools
 There are addition tools that can support `wipen`, or leverage the produced JSON object. For more information, refer to the tool's [README](https://github.com/InfamousSYN/wipen/blob/main/tools/README.md) documentation.
 
-
-## To Do
-- Add a task queue system that watches for new content in the json object and then uses workers to perform action. IE When a new BSSID for the parent is added, a worker then opens the PCAP and iterates over the packet collection to count the total number of time the BSSID was seen and begins to search for connected clients and other similar BSSID. The number of parallel subtasks being ran at a time is controllable through argparse with a default of 2. 
-- look at finding similar ssid based on [`difflib`](https://docs.python.org/2/library/difflib.html)
-- detect WEP rather than listing as WPA/PSK
