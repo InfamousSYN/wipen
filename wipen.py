@@ -6,6 +6,7 @@ warnings.filterwarnings('ignore', category=CryptographyDeprecationWarning)
 from scapy.all import *
 from lib import settings
 from lib import options as o
+from lib import wipenInterfaceManager
 from lib.parser import wipenParser
 import logging
 import queue
@@ -34,116 +35,140 @@ if __name__ == '__main__':
     
     starttime = datetime.now()
     print('[+] Launching wipen {}\r\n[-] Start time: {}\r\n[-]'.format(settings.__version__, starttime))
-    filename = '{}.json'.format(option['output_filename'])
-    wipen = wipenParser.wipenParserClass(
-        verbose=option['verbose'],
-        depth=option['depth'],
-        ssid_pattern=option['ssid_pattern'],
-        filename=filename,
-        ignore_bssid=option['ignore_bssid'],
-        ignore_client=option['ignore_client'],
-        disable_vendor_mac_refresh=option['disable_vendor_mac_refresh'],
-        periodic_file_update=option['periodic_file_update'])
 
-    # add each SSID in the runtime list to the JSON payload object
-    for ssid in option['target_ssid']:
-        print('[-] Building skeleton JSON Object for \'{}\''.format(ssid))
-        wipen.checkSSIDExist(ssid=ssid)
-    if(option['verbose']):
-        print('[-] SSID runtime search list is:\r\n    {}'.format(json.loads(wipen.getJSONPayload())))
-        print(wipen.getJSONPayload())
-
-    print('[-] Saving to file: {}'.format(filename))
-    writeJSONPayload(
-        payload=wipen.getJSONPayload(),
-        filename=filename)
-
-    print('[-] Starting runtime job for \'{}\'...'.format(ssid))
-    for ssid in [ssid for index, ssid in enumerate(json.loads(wipen.getJSONPayload()))]:
-        wipen.setTargetSSID(ssid)
-        for pcap_file in option['pcap_filename']:
-            print('[+] Reading file: {}'.format(pcap_file))
-
-            print('[+] Searching for BSSID broadcasting target SSID')
-            sniff(offline=pcap_file, prn=wipen.find_SSID_Handler, store=0)
-            print('[-] Updating {} file with results of search for BSSID broadcasting target SSID\r\n[-]'.format(filename))
-            writeJSONPayload(
-                payload=wipen.getJSONPayload(),
-                filename=filename)
-
-            if( (not wipen.check_SSID_BSSID_Exist(ssid=ssid)) ):
-                if(option['verbose']):
-                    print('[-] No BSSID broadcasting target SSID found')
-                print('[-] No BSSID broadcasting target SSID were found, skipping searching for similar BSSID to known BSSID...')
+    if(option['mode'] == 0):
+        wipenInterfaceManager.InterfaceManager(
+            ssid_scope=option['target_ssid'], 
+            ssid_pattern=option['ssid_pattern'],
+            filename='{}.json'.format(option['output_filename']),
+            depth=option['depth'],
+            ignore_bssid=option['ignore_bssid'],
+            ignore_client=option['ignore_client'],
+            disable_vendor_mac_refresh=option['disable_vendor_mac_refresh'],
+            periodic_file_update=option['periodic_file_update'],
+            interface=option['interface'], 
+            hop_rate=option['hop_rate'], 
+            capture_length=option['capture_length'], 
+            save_pcap=option['save_pcap'], 
+            output_pcap=option['output_pcap'], 
+            verbose=option['verbose'],
+            skip_similar_ssid=option['skip_similar_ssid'],
+        ).main()
+    elif(option['mode'] == 1):
+        filename = '{}.json'.format(option['output_filename'])
+        wipen = wipenParser.wipenParserClass(
+            verbose=option['verbose'],
+            depth=option['depth'],
+            ssid_pattern=option['ssid_pattern'],
+            filename=filename,
+            ignore_bssid=option['ignore_bssid'],
+            ignore_client=option['ignore_client'],
+            disable_vendor_mac_refresh=option['disable_vendor_mac_refresh'],
+            periodic_file_update=option['periodic_file_update'])
+    
+        # add each SSID in the runtime list to the JSON payload object
+        for ssid in option['target_ssid']:
+            print('[-] Building skeleton JSON Object for \'{}\''.format(ssid))
+            wipen.checkSSIDExist(ssid=ssid)
+        if(option['verbose']):
+            print('[-] SSID runtime search list is:\r\n    {}'.format(json.loads(wipen.getJSONPayload())))
+            print(wipen.getJSONPayload())
+    
+        print('[-] Saving to file: {}'.format(filename))
+        writeJSONPayload(
+            payload=wipen.getJSONPayload(),
+            filename=filename)
+    
+        print('[-] Starting runtime job for \'{}\'...'.format(ssid))
+        for ssid in [ssid for index, ssid in enumerate(json.loads(wipen.getJSONPayload()))]:
+            wipen.setTargetSSID(ssid)
+            for pcap_file in option['pcap_filename']:
+                print('[+] Reading file: {}'.format(pcap_file))
+    
+                print('[+] Searching for BSSID broadcasting target SSID')
+                sniff(offline=pcap_file, prn=wipen.find_SSID_Handler, store=0)
                 print('[-] Updating {} file with results of search for BSSID broadcasting target SSID\r\n[-]'.format(filename))
                 writeJSONPayload(
                     payload=wipen.getJSONPayload(),
                     filename=filename)
-            else:
-                if( (option['skip_similar_bssid']) ):
-                    print('[-] Searching for similar BSSID to BSSID broadcasting target SSID manually disabled...')
-                else:
-                    print('[+] Searching for similar BSSID to known target SSID\'s BSSID')
-                    sniff(offline=pcap_file, prn=wipen.find_SIMILAR_BSSID_Handler, store=0)
-                    print('[-] Updating {} file with results of search for similar BSSID to known target SSID\'s BSSID\r\n[-]'.format(filename))
-                    writeJSONPayload(
-                        payload=wipen.getJSONPayload(),
-                        filename=filename)
-
-            if( (option['skip_similar_ssid']) ):
-                print('[-] Searching for similar SSID to target SSID manually disabled...')
-            else:
-                if( (option['ssid_pattern'] is not None) ):
-                    print('[+] Searching for similar SSID pattern to target SSID')
-                    sniff(offline=pcap_file, prn=wipen.find_SIMILAR_SSID_Handler, store=0)
-                    print('[-] Updating {} file with results of search for similar SSID to target SSID\r\n[-]'.format(filename))
+    
+                if( (not wipen.check_SSID_BSSID_Exist(ssid=ssid)) ):
+                    if(option['verbose']):
+                        print('[-] No BSSID broadcasting target SSID found')
+                    print('[-] No BSSID broadcasting target SSID were found, skipping searching for similar BSSID to known BSSID...')
+                    print('[-] Updating {} file with results of search for BSSID broadcasting target SSID\r\n[-]'.format(filename))
                     writeJSONPayload(
                         payload=wipen.getJSONPayload(),
                         filename=filename)
                 else:
-                    print('[+] Search pattern for similar SSID to target SSID was not provided, skipping...')
-
-            if( (option['skip_similar_ssid']) ):
-                print('[-] Disabling searching for similar SSID to target SSID metadata...')
-                wipen._enable_SIMILAR_SSID_METADATA_SEARCH(status=False)
-            else:
-                print('[-] Enabling searching for similar SSID to target SSID metadata...')
-                wipen._enable_SIMILAR_SSID_METADATA_SEARCH(status=True)
-
-            print('[+] Searching for clients connected to known BSSID for target SSID')
-            sniff(offline=pcap_file, prn=wipen.find_Connected_Client_Handler, store=0)
-            print('[-] Updating {} file with results of connected client search\r\n[-]'.format(filename))
-            writeJSONPayload(
-                payload=wipen.getJSONPayload(),
-                filename=filename)
-
-            print('[+] Searching for probes from known connected clients')
-            sniff(offline=pcap_file, prn=wipen.find_Connected_Client_Probe_Handler, store=0)
-            print('[-] Updating {} file with results of connected client\'s probe search\r\n[-]'.format(filename))
-            writeJSONPayload(
-                payload=wipen.getJSONPayload(),
-                filename=filename)
-
-            print('[+] Searching for EAP identity messages from known connected clients')
-            sniff(offline=pcap_file, prn=wipen.find_Connected_Client_Identity_Handler, store=0)
-            print('[-] Updating {} file with results of connected client\'s identity search\r\n[-]'.format(filename))
-            writeJSONPayload(
-                payload=wipen.getJSONPayload(),
-                filename=filename)
-
-            print('[-] Ending runtime job for \'{}\' and \'{}\' task completed'.format(ssid, pcap_file))
-            print('[-] Updating {} with final JSON payload for \'{}\' and closing\r\n[-]'.format(filename, ssid))
-            writeJSONPayload(
-                payload=wipen.getJSONPayload(),
-                filename=filename)
-
-    print('[-] Final update of {} and closing\r\n[-]'.format(filename))
-    writeJSONPayload(
-        payload=wipen.getJSONPayload(),
-        filename=filename)
+                    if( (option['skip_similar_bssid']) ):
+                        print('[-] Searching for similar BSSID to BSSID broadcasting target SSID manually disabled...')
+                    else:
+                        print('[+] Searching for similar BSSID to known target SSID\'s BSSID')
+                        sniff(offline=pcap_file, prn=wipen.find_SIMILAR_BSSID_Handler, store=0)
+                        print('[-] Updating {} file with results of search for similar BSSID to known target SSID\'s BSSID\r\n[-]'.format(filename))
+                        writeJSONPayload(
+                            payload=wipen.getJSONPayload(),
+                            filename=filename)
+    
+                if( (option['skip_similar_ssid']) ):
+                    print('[-] Searching for similar SSID to target SSID manually disabled...')
+                else:
+                    if( (option['ssid_pattern'] is not None) ):
+                        print('[+] Searching for similar SSID pattern to target SSID')
+                        sniff(offline=pcap_file, prn=wipen.find_SIMILAR_SSID_Handler, store=0)
+                        print('[-] Updating {} file with results of search for similar SSID to target SSID\r\n[-]'.format(filename))
+                        writeJSONPayload(
+                            payload=wipen.getJSONPayload(),
+                            filename=filename)
+                    else:
+                        print('[+] Search pattern for similar SSID to target SSID was not provided, skipping...')
+    
+                if( (option['skip_similar_ssid']) ):
+                    print('[-] Disabling searching for similar SSID to target SSID metadata...')
+                    wipen._enable_SIMILAR_SSID_METADATA_SEARCH(status=False)
+                else:
+                    print('[-] Enabling searching for similar SSID to target SSID metadata...')
+                    wipen._enable_SIMILAR_SSID_METADATA_SEARCH(status=True)
+    
+                print('[+] Searching for clients connected to known BSSID for target SSID')
+                sniff(offline=pcap_file, prn=wipen.find_Connected_Client_Handler, store=0)
+                print('[-] Updating {} file with results of connected client search\r\n[-]'.format(filename))
+                writeJSONPayload(
+                    payload=wipen.getJSONPayload(),
+                    filename=filename)
+    
+                print('[+] Searching for probes from known connected clients')
+                sniff(offline=pcap_file, prn=wipen.find_Connected_Client_Probe_Handler, store=0)
+                print('[-] Updating {} file with results of connected client\'s probe search\r\n[-]'.format(filename))
+                writeJSONPayload(
+                    payload=wipen.getJSONPayload(),
+                    filename=filename)
+    
+                print('[+] Searching for EAP identity messages from known connected clients')
+                sniff(offline=pcap_file, prn=wipen.find_Connected_Client_Identity_Handler, store=0)
+                print('[-] Updating {} file with results of connected client\'s identity search\r\n[-]'.format(filename))
+                writeJSONPayload(
+                    payload=wipen.getJSONPayload(),
+                    filename=filename)
+    
+                print('[-] Ending runtime job for \'{}\' and \'{}\' task completed'.format(ssid, pcap_file))
+                print('[-] Updating {} with final JSON payload for \'{}\' and closing\r\n[-]'.format(filename, ssid))
+                writeJSONPayload(
+                    payload=wipen.getJSONPayload(),
+                    filename=filename)
+    
+        print('[-] Final update of {} and closing\r\n[-]'.format(filename))
+        writeJSONPayload(
+            payload=wipen.getJSONPayload(),
+            filename=filename)
+    else:
+        print('[!] Unknown packet extraction mode selected')
+        sys.exit(1)
     if(option['show_final']):
         print('[-] Result:\r\n    {}'.format(json.loads(wipen.getJSONPayload())))
 
     endtime = datetime.now()
     print('[-]\r\n[-] End time: {}'.format(endtime))
     print('[-] Duration: {} seconds\r\n[-]'.format((endtime-starttime).seconds))
+    sys.exit(0)

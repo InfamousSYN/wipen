@@ -21,11 +21,12 @@ class wipenParserClass():
         self.periodic_file_update = periodic_file_update*60
 
         # Reset from tuple to list
-        _ssid_pattern_reset = self.ssid_pattern
-        self.ssid_pattern = list()
-        for ssids in _ssid_pattern_reset:
-            for ssid in ssids:
-                self.ssid_pattern.append(ssid)
+        if(self.ssid_pattern[0] is not None):
+            _ssid_pattern_reset = self.ssid_pattern
+            self.ssid_pattern = list()
+            for ssids in _ssid_pattern_reset:
+                for ssid in ssids:
+                    self.ssid_pattern.append(ssid)
 
         self.mac = mac_vendor_lookup.MacLookup()
         if(not self.disable_vendor_mac_refresh):
@@ -158,6 +159,16 @@ class wipenParserClass():
             print('[!] Error updating output file')
 
     @classmethod
+    def writeJSONPayloadFileWrite(self):
+        try:
+            if(self.wipenJSONPayload != {} ):
+                fo = open(self.filename, 'w')
+                fo.write(self.getJSONPayload())
+                fo.close()
+        except Exception as e:
+            print('[!] Error updating output file')
+
+    @classmethod
     def checkSSIDExist(self, ssid=None):
         if(ssid in self.wipenJSONPayload):
             print("[-] SSID already in JSON Object, skipping...")
@@ -255,10 +266,11 @@ class wipenParserClass():
             })
 
     @classmethod
-    def add_CONNECTED_CLIENTS_IDENTITY(self, payload=None, identity=None):
+    def add_CONNECTED_CLIENTS_IDENTITY(self, payload=None, identity=None, bssid=None):
         return payload.append({
             'id':len(payload),
-            'identity':identity
+            'identity':identity,
+            'bssid':bssid
             })
 
     @classmethod
@@ -306,7 +318,7 @@ class wipenParserClass():
             ssid=self.target_ssid
 
             for _known_bssid_pos, _known_bssid in enumerate(self.wipenJSONPayload[ssid]['bssid']):
-                if( (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr2 not in self.ignore_bssid ) and (packet.addr2 != _known_bssid.get('bssid')) ):
+                if( (self.wipenJSONPayload[ssid]['bssid'] is not []) and (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr2 not in self.ignore_bssid ) and (packet.addr2 != _known_bssid.get('bssid')) ):
                     # remove the bssid deep search here
 
                     mangled_packet_address = packet.addr3.split(':', self.depth)[:-1]
@@ -348,7 +360,7 @@ class wipenParserClass():
         import re
         ssid=self.target_ssid
 
-        if( (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr3 not in self.ignore_bssid ) and ( packet.info.decode('utf-8') != ssid and packet.info.decode('utf-8') is not None and packet.info.decode('utf-8') != '' ) ):
+        if( (self.ssid_pattern[0] is not None) and (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr3 not in self.ignore_bssid ) and ( packet.info.decode('utf-8') != ssid and packet.info.decode('utf-8') is not None and packet.info.decode('utf-8') != '' ) ):
             for ssid_pattern in self.ssid_pattern:
                 if( (re.match(ssid_pattern, packet.info.decode('utf-8'), re.IGNORECASE)) 
                     and (packet.info.decode('utf-8') not in [next(iter(_known_similar_ssid)) for _known_similar_ssid in self.wipenJSONPayload[ssid]['similar_ssid']] ) ):
@@ -613,8 +625,9 @@ class wipenParserClass():
                         )) ):
                             print('[-] Found new identity for \'{}\' by client \'{}\' connected to {}\'s \'{}\' BSSID, adding...'.format(packet.getlayer(EAP).identity.decode('utf-8'), client_address, next(iter(_known_similar_ssid)), bssid_address))
                             self.add_CONNECTED_CLIENTS_IDENTITY(
+                                identity=packet.getlayer(EAP).identity.decode('utf-8'),
+                                bssid=bssid_address,
                                 payload=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['associated_clients'][_known_similar_ssid_bssid_associated_client_pos]['identities'],
-                                identity=packet.getlayer(EAP).identity.decode('utf-8')
                                 )
                         elif( ( client_address == _known_similar_ssid_bssid_associated_client.get('client_addr') ) and (packet.getlayer(EAP).identity.decode('utf-8') in self.deep_search(
                             target_key='identity', 
