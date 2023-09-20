@@ -2,6 +2,8 @@
 from scapy.all import *
 import re
 import sys
+import uuid
+from datetime import datetime
 from lib import settings
 import mac_vendor_lookup
 
@@ -34,6 +36,33 @@ class wipenParserClass():
             self.mac.update_vendors()
 
         threading.Thread(target=self.periodicJSONPayloadFileWrite, daemon=True).start()
+
+    @staticmethod
+    def get_object_type(obj=None):
+        try:
+            if(obj.lower()=='ssid'):
+                return 'ssid'
+            if(obj.lower()=='bssid'):
+                return 'bssid'
+            if(obj.lower()=='sta'):
+                return 'sta'
+            if(obj.lower()=='identity'):
+                return 'identity'
+            if(obj.lower()=='probe'):
+                return 'probe'
+        except Exception as e:
+            raise
+
+    @classmethod
+    def get_new_uuid(self):
+        result = uuid.uuid4()
+        if(result not in self.deep_search(
+            target_key='id',
+            payload=self.wipenJSONPayload)):
+            return '{}'.format(result)
+        else:
+            self.get_new_uuid()
+
 
     @staticmethod
     def getStandard(standard=None, packet=None):
@@ -173,7 +202,7 @@ class wipenParserClass():
         if(ssid in self.wipenJSONPayload):
             print("[-] SSID already in JSON Object, skipping...")
         else:
-            self.initialise_SSID_Struct(ssid=ssid)
+            self.initialise_SSID_Struct(ssid=ssid,_id=self.get_new_uuid(),_type=wipenParserClass.get_object_type(obj='ssid'))
         return 0
 
     @classmethod
@@ -209,19 +238,39 @@ class wipenParserClass():
         return 0
 
     @classmethod
-    def initialise_SSID_Struct(self, ssid=None):
-        self.wipenJSONPayload.update(
-            {'{}'.format(ssid):{'bssid':[],'similar_ssid':[]}}
-            )
+    def initialise_SSID_Struct(self, ssid=None, _pid=None, _id=None, _sid=[], _type=None):
+        self.wipenJSONPayload.update({
+                '{}'.format(ssid):{
+                    'bssid':[],
+                    'similar_ssid':[],
+                    'metadata':{
+                        '_pid':_pid,
+                        '_id':_id,
+                        '_sid':_sid,
+                        '_type':_type,
+                        'starttime':'{}'.format(datetime.now()),
+                        'endtime':None
+                    }
+                }
+            })
 
     @classmethod
-    def initialise_SIMILAR_SSID_Struct(self, ssid=None, similar_ssid=None):
-        self.wipenJSONPayload[ssid]['similar_ssid'].append(
-            {'{}'.format(similar_ssid):{'bssid':[],'similar_ssid':[]}}
-            )
+    def initialise_SIMILAR_SSID_Struct(self, ssid=None, similar_ssid=None, _pid=None, _id=None, _sid=[], _type=None):
+        self.wipenJSONPayload[ssid]['similar_ssid'].append({
+            '{}'.format(similar_ssid):{
+                'bssid':[],
+                'similar_ssid':[],
+                'metadata':{
+                    '_pid':_pid,
+                    '_id':_id,
+                    '_sid':_sid,
+                    '_type':_type
+                }
+            }
+        })
 
     @classmethod
-    def add_BSSID_Entry(self, payload=None, bssid=None, frequency=None, protocol=None, authentication=None, vendor=None, hidden_ssid=None):
+    def add_BSSID_Entry(self, payload=None, bssid=None, frequency=None, protocol=None, authentication=None, vendor=None, hidden_ssid=None, _pid=None, _id=None, _sid=[], _type=None):
         return payload.append({
                 "bssid":bssid,
                 "frequency":frequency,
@@ -229,15 +278,21 @@ class wipenParserClass():
                 "authentication":authentication,
                 "associated_clients":[],
                 "similar_bssid":[],
-                "pmkid":[],
+                "pmkid":None,
                 "vendor":vendor,
                 "wps":"wps",
                 "times_seen":1,
-                "hidden_ssid": hidden_ssid
+                "hidden_ssid": hidden_ssid,
+                'metadata':{
+                    '_pid':_pid,
+                    '_id':_id,
+                    '_sid':_sid,
+                    '_type':_type
+                }
             })
 
     @classmethod
-    def add_SIMILAR_BSSID_Entry(self, payload=None, ssid=None, known_bssid=None, postion=None, similar_bssid=None, similar_ssid=None, protocol=None, frequency=None, hidden_ssid=None, vendor=None, authentication=None):
+    def add_SIMILAR_BSSID_Entry(self, payload=None, ssid=None, known_bssid=None, postion=None, similar_bssid=None, similar_ssid=None, protocol=None, frequency=None, hidden_ssid=None, vendor=None, authentication=None, _pid=None, _id=None, _sid=[], _type=None):
         return payload.append({
                 "ssid":similar_ssid,
                 "bssid":similar_bssid,
@@ -247,35 +302,61 @@ class wipenParserClass():
                 "vendor":vendor,
                 "times_seen":1,
                 "hidden_ssid":hidden_ssid,
+                'metadata':{
+                    '_pid':_pid,
+                    '_id':_id,
+                    '_sid':_sid,
+                    '_type':_type
+                }
             })
 
     @classmethod
-    def add_CONNECTED_CLIENTS(self, payload=None, client_addr=None, identity=None, vendor=None):
+    def add_CONNECTED_CLIENTS(self, payload=None, client_addr=None, identity=None, vendor=None, _pid=None, _id=None, _sid=[], _type=None):
         return payload.append({
             'client_addr':client_addr,
             'identities':[],
             'probes':[],
-            'vendor':vendor
+            'vendor':vendor,
+            'metadata':{
+                '_pid':_pid,
+                '_id':_id,
+                '_sid':_sid,
+                '_type':_type
+            }
         })
 
     @classmethod
-    def add_CONNECTED_CLIENTS_PROBES(self, payload=None, probed_ssid=None):
+    def add_CONNECTED_CLIENTS_PROBES(self, payload=None, probed_ssid=None, _pid=None, _id=None, _sid=[], _type=None):
         return payload.append({
-            'id':len(payload),
-            'probe':probed_ssid
-            })
+            'probe':probed_ssid,
+            'metadata':{
+                '_pid':_pid,
+                '_id':_id,
+                '_sid':_sid,
+                '_type':_type
+            }
+        })
 
     @classmethod
-    def add_CONNECTED_CLIENTS_IDENTITY(self, payload=None, identity=None, bssid=None):
+    def add_CONNECTED_CLIENTS_IDENTITY(self, payload=None, identity=None, _pid=None, _id=None, _sid=[], _type=None):
         return payload.append({
-            'id':len(payload),
             'identity':identity,
-            'bssid':bssid
-            })
+            'metadata':{
+                '_pid':_pid,
+                '_id':_id,
+                '_sid':_sid,
+                '_type':_type
+            }
+        })
 
     @classmethod
     def update_SSID_BSSID_TIMES_SEEN_Count(self, payload=None):
         return payload.update({'times_seen': payload['times_seen']+1})
+
+    @classmethod
+    def update_SSID_ENDTIME(self, ssid=None):
+        self.wipenJSONPayload[ssid]['metadata']['endtime'] = '{}'.format(datetime.now())
+        return 1
 
     @classmethod
     def find_SSID_Handler(self, packet):
@@ -293,7 +374,10 @@ class wipenParserClass():
                     protocol=wipenParserClass.getStandard(standard=packet.getlayer(RadioTap).ChannelFlags, packet=packet) if packet.getlayer(RadioTap) else None,
                     authentication=wipenParserClass.getAuthentication(packet),
                     vendor=self.getVendor(bssid=packet.addr2),
-                    hidden_ssid=True if(not packet.info) else False
+                    hidden_ssid=True if(not packet.info) else False,
+                    _pid=self.wipenJSONPayload[ssid]['metadata'].get('_id'),
+                    _id=self.get_new_uuid(),
+                    _type=wipenParserClass.get_object_type(obj='bssid')
                 )
             elif( (packet.addr2 in self.deep_search(
                 target_key='bssid',
@@ -335,8 +419,11 @@ class wipenParserClass():
                             frequency=wipenParserClass.getChannel(packet.getlayer(RadioTap).ChannelFrequency) if(packet.getlayer(RadioTap)) else None,
                             protocol=wipenParserClass.getStandard(standard=packet.getlayer(RadioTap).ChannelFlags, packet=packet) if packet.getlayer(RadioTap) else None,
                             authentication=wipenParserClass.getAuthentication(packet),
+                            vendor=self.getVendor(bssid=packet.addr3),
                             hidden_ssid=True if(not packet.info) else False,
-                            vendor=self.getVendor(bssid=packet.addr3)
+                            _pid=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['metadata'].get('_id'),
+                            _id=self.get_new_uuid(),
+                            _type=wipenParserClass.get_object_type(obj='bssid')
                         )
                     elif((mangled_packet_address == mangled_target_address) and (packet.addr2 not in self.deep_search(
                         target_key='bssid',
@@ -362,10 +449,10 @@ class wipenParserClass():
 
         if( (self.ssid_pattern[0] is not None) and (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr3 not in self.ignore_bssid ) and ( packet.info.decode('utf-8') != ssid and packet.info.decode('utf-8') is not None and packet.info.decode('utf-8') != '' ) ):
             for ssid_pattern in self.ssid_pattern:
-                if( (re.match(ssid_pattern, packet.info.decode('utf-8'), re.IGNORECASE)) 
+                if( (re.search(ssid_pattern, packet.info.decode('utf-8'), re.IGNORECASE)) 
                     and (packet.info.decode('utf-8') not in [next(iter(_known_similar_ssid)) for _known_similar_ssid in self.wipenJSONPayload[ssid]['similar_ssid']] ) ):
                     print('[-] New similar SSID found \'{}\' frame, adding...'.format(packet.info.decode('utf-8')))
-                    self.initialise_SIMILAR_SSID_Struct(ssid=ssid, similar_ssid=packet.info.decode('utf-8'))
+                    self.initialise_SIMILAR_SSID_Struct(ssid=ssid, similar_ssid=packet.info.decode('utf-8'), _pid=self.wipenJSONPayload[ssid]['metadata'].get('_id'), _id=self.get_new_uuid(), _type=wipenParserClass.get_object_type(obj='ssid'))
                     for _known_similar_ssid_pos, _known_similar_ssid in enumerate(self.wipenJSONPayload[ssid]['similar_ssid']):
                         if( (packet.info.decode('utf-8') == next(iter(_known_similar_ssid))) ):
                             self.add_BSSID_Entry(
@@ -375,10 +462,15 @@ class wipenParserClass():
                                 protocol=wipenParserClass.getStandard(standard=packet.getlayer(RadioTap).ChannelFlags, packet=packet) if packet.getlayer(RadioTap) else None,
                                 authentication=wipenParserClass.getAuthentication(packet),
                                 vendor=self.getVendor(bssid=packet.addr2),
-                                hidden_ssid=True if(not packet.info) else False)
+                                hidden_ssid=True if(not packet.info) else False,
+                                _pid=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['metadata'].get('_id'),
+                                _id=self.get_new_uuid(),
+                                _type=wipenParserClass.get_object_type(obj='bssid')
+                            )
+
                         else:
                             pass
-                elif( (re.match(ssid_pattern, packet.info.decode('utf-8'), re.IGNORECASE)) 
+                elif( (re.search(ssid_pattern, packet.info.decode('utf-8'), re.IGNORECASE)) 
                     and (packet.info.decode('utf-8') in [next(iter(_known_similar_ssid)) for _known_similar_ssid in self.wipenJSONPayload[ssid]['similar_ssid']] ) ):
                     for _known_similar_ssid_pos, _known_similar_ssid in enumerate(self.wipenJSONPayload[ssid]['similar_ssid']):
                         if( (packet.info.decode('utf-8') == next(iter(_known_similar_ssid))) 
@@ -395,7 +487,10 @@ class wipenParserClass():
                                 protocol=wipenParserClass.getStandard(standard=packet.getlayer(RadioTap).ChannelFlags, packet=packet) if packet.getlayer(RadioTap) else None,
                                 authentication=wipenParserClass.getAuthentication(packet),
                                 vendor=self.getVendor(bssid=packet.addr2),
-                                hidden_ssid=True if(not packet.info) else False)
+                                hidden_ssid=True if(not packet.info) else False,
+                                _pid=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['metadata'].get('_id'),
+                                _id=self.get_new_uuid(),
+                                _type=wipenParserClass.get_object_type(obj='bssid'))
                         elif( (packet.info.decode('utf-8') == next(iter(_known_similar_ssid))) 
                             and (any((match := item) in [packet.addr1, packet.addr2] for item in self.deep_search(
                                 target_key='bssid',
@@ -451,13 +546,19 @@ class wipenParserClass():
                     self.add_CONNECTED_CLIENTS(
                         payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['associated_clients'],
                         client_addr=client_address,
-                        vendor=self.getVendor(bssid=client_address)
+                        vendor=self.getVendor(bssid=client_address),
+                        _pid=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['metadata'].get('_id'),
+                        _id=self.get_new_uuid(),
+                        _type=wipenParserClass.get_object_type(obj='sta')
                     )
                 except mac_vendor_lookup.VendorNotFoundError:
                     self.add_CONNECTED_CLIENTS(
                         payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['associated_clients'],
                         client_addr=client_address,
-                        vendor=None
+                        vendor=None,
+                        _pid=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['metadata'].get('_id'),
+                        _id=self.get_new_uuid(),
+                        _type=wipenParserClass.get_object_type(obj='sta')
                     )
                 return 0
             elif(bssid_address == _known_bssid.get('bssid') and (client_address in self.deep_search(
@@ -483,14 +584,20 @@ class wipenParserClass():
                             self.add_CONNECTED_CLIENTS(
                                 payload=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['associated_clients'],
                                 client_addr=client_address,
-                                vendor=self.getVendor(bssid=client_address)
+                                vendor=self.getVendor(bssid=client_address),
+                                _pid=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['metadata'].get('_id'),
+                                _id=self.get_new_uuid(),
+                                _type=wipenParserClass.get_object_type(obj='sta')
                             )
                             return 0
                         except mac_vendor_lookup.VendorNotFoundError:
                             self.add_CONNECTED_CLIENTS(
                                 payload=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['associated_clients'],
                                 client_addr=client_address,
-                                vendor=None
+                                vendor=None,
+                                _pid=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['metadata'].get('_id'),
+                                _id=self.get_new_uuid(),
+                                _type=wipenParserClass.get_object_type(obj='sta')
                             )
                             return 0
                     elif(bssid_address == _known_similar_ssid_bssid.get('bssid') and (client_address in self.deep_search(
@@ -530,18 +637,21 @@ class wipenParserClass():
                 if( client_address == _known_associated_client.get('client_addr') and (packet.info.decode('utf-8') not in self.deep_search(
                         target_key='probe', 
                         payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['associated_clients'][_known_associated_client_pos]['probes']
-                    )) ):
-                    print('[-] Found new probe for \'{}\' by client \'{}\' connected to {}\'s \'{}\' BSSID, adding...'.format(packet.info.decode('utf-8'), client_address, ssid, bssid_address))
+                    )) and (packet.info.decode('utf-8') != '') ):
+                    print('[-] Found new probe for \'{}\' by client \'{}\' connected to {}\'s \'{}\' BSSID, adding...'.format(packet.info.decode('utf-8'), client_address, ssid, _known_bssid.get('bssid')))
                     self.add_CONNECTED_CLIENTS_PROBES(
                         payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['associated_clients'][_known_associated_client_pos]['probes'],
-                        probed_ssid=packet.info.decode('utf-8')
+                        probed_ssid=packet.info.decode('utf-8'),
+                        _pid=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['associated_clients'][_known_associated_client_pos]['metadata'].get('_id'),
+                        _id=self.get_new_uuid(),
+                        _type=wipenParserClass.get_object_type(obj='probe')
                         )
                 elif( client_address == _known_associated_client.get('client_addr') and (packet.info.decode('utf-8') in self.deep_search(
                         target_key='probe', 
                         payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['associated_clients'][_known_associated_client_pos]['probes']
-                    )) ):
+                    )) and (packet.info.decode('utf-8') != '') ):
                     if(self.verbose):
-                        print('[-] Client {} known to be connected to BSSID {} and probing for {}, skipping...'.format(client_address, bssid_address, packet.info.decode('utf-8')))
+                        print('[-] Client {} known to be connected to BSSID {} and probing for {}, skipping...'.format(client_address, _known_bssid.get('bssid'), packet.info.decode('utf-8')))
                 else:
                     if(self.verbose):
                         print('[-] Packet did not meet condition, skipping...')
@@ -552,16 +662,19 @@ class wipenParserClass():
                         if( client_address == _known_similar_ssid_bssid_associated_client.get('client_addr') and (packet.info.decode('utf-8') not in self.deep_search(
                             target_key='probe', 
                             payload=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['associated_clients'][_known_similar_ssid_bssid_associated_client_pos]['probes']
-                        )) ):
-                            print('[-] Found new probe for \'{}\' by client \'{}\' connected to {}\'s \'{}\' BSSID, adding...'.format(packet.info.decode('utf-8'), client_address, next(iter(_known_similar_ssid)), bssid_address))
+                        )) and (packet.info.decode('utf-8') != '') ):
+                            print('[-] Found new probe for \'{}\' by client \'{}\' connected to {}\'s \'{}\' BSSID, adding...'.format(packet.info.decode('utf-8'), client_address, next(iter(_known_similar_ssid)), _known_bssid.get('bssid')))
                             self.add_CONNECTED_CLIENTS_PROBES(
                                 payload=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['associated_clients'][_known_similar_ssid_bssid_associated_client_pos]['probes'],
-                                probed_ssid=packet.info.decode('utf-8')
+                                probed_ssid=packet.info.decode('utf-8'),
+                                _pid=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['associated_clients'][_known_similar_ssid_bssid_associated_client_pos]['metadata'].get('_id'),
+                                _id=self.get_new_uuid(),
+                                _type=wipenParserClass.get_object_type(obj='probe')
                                 )
                         elif( client_address == _known_similar_ssid_bssid_associated_client.get('client_addr') and (packet.info.decode('utf-8') in self.deep_search(
                             target_key='probe', 
                             payload=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['associated_clients'][_known_similar_ssid_bssid_associated_client_pos]['probes']
-                        )) ):
+                        )) and (packet.info.decode('utf-8') != '') ):
                             if(self.verbose):
                                 print('[-] Client {} known to be connected to BSSID {} and probing for {}, skipping...'.format(client_address, bssid_address, packet.info.decode('utf-8')))
                         else:
@@ -574,7 +687,7 @@ class wipenParserClass():
         ssid=self.target_ssid
 
         if(self.verbose):
-            print('[-] Searching for known connected STA\'s probe requests')
+            print('[-] Searching for known connected STA\'s identity responses')
             print('[-] Building runtime list of all known STA')
         try:
             if( ( packet.type == 2 ) and ( packet.haslayer(EAP) and packet.getlayer(EAP).code == 2 ) and (hasattr(packet.getlayer(EAP), 'identity')) and ( any((match := item) in [packet.addr1, packet.addr2] for item in self.deep_search(
@@ -604,7 +717,10 @@ class wipenParserClass():
                     print('[-] Found new identity for \'{}\' by client \'{}\' connected to {}\'s \'{}\' BSSID, adding...'.format(packet.getlayer(EAP).identity.decode('utf-8'), client_address, ssid, bssid_address))
                     self.add_CONNECTED_CLIENTS_IDENTITY(
                         payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['associated_clients'][_known_associated_client_pos]['identities'],
-                        identity=packet.getlayer(EAP).identity.decode('utf-8')
+                        identity=packet.getlayer(EAP).identity.decode('utf-8'),
+                        _pid=None,
+                        _id=self.get_new_uuid(),
+                        _type=wipenParserClass.get_object_type(obj='identity')
                         )
                 elif( (client_address == _known_associated_client.get('client_addr') ) and ( packet.getlayer(EAP).identity.decode('utf-8') not in self.deep_search(
                         target_key='identity', 
@@ -626,8 +742,10 @@ class wipenParserClass():
                             print('[-] Found new identity for \'{}\' by client \'{}\' connected to {}\'s \'{}\' BSSID, adding...'.format(packet.getlayer(EAP).identity.decode('utf-8'), client_address, next(iter(_known_similar_ssid)), bssid_address))
                             self.add_CONNECTED_CLIENTS_IDENTITY(
                                 identity=packet.getlayer(EAP).identity.decode('utf-8'),
-                                bssid=bssid_address,
                                 payload=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['associated_clients'][_known_similar_ssid_bssid_associated_client_pos]['identities'],
+                                _pid=None,
+                                _id=self.get_new_uuid(),
+                                _type=wipenParserClass.get_object_type(obj='identity')
                                 )
                         elif( ( client_address == _known_similar_ssid_bssid_associated_client.get('client_addr') ) and (packet.getlayer(EAP).identity.decode('utf-8') in self.deep_search(
                             target_key='identity', 
@@ -641,12 +759,37 @@ class wipenParserClass():
         return
 
     @classmethod
-    def find_SSID_BSSID_PMKID(self):
+    def find_SSID_BSSID_PMKID(self, packet):
+        import binascii
+
+        ssid=self.target_ssid
+        if( (packet.haslayer(EAPOL)) and (packet.haslayer(Raw)) and (packet.addr2 in self.deep_search(
+                target_key='bssid',
+                payload=self.wipenJSONPayload[ssid]['bssid'])) ):
+            if( (binascii.hexlify(packet[EAPOL][Raw].load[2:4]) == b'8a00') ):
+                print('[-] Found EAPOL message 1 for known BSSID {}, checking for PMKID...'.format(packet.addr2))
+                # '000fac04' is the RSN PMKID field
+                if( '000fac04' in packet[EAPOL][Raw].load.hex() ):
+                    print('[-] PMKID for BSSID {} found!'.format(packet.addr2))
+                    index = packet[EAPOL][Raw].load.hex().index('000fac04')
+                    pmkid = packet[EAPOL][Raw].load.hex()[index + 8:index+48]
+                    
+                    for _known_bssid_pos, _known_bssid in enumerate(self.wipenJSONPayload[ssid]['bssid']):
+                        if(packet.addr2 == _known_bssid.get('bssid')):
+                            self.add_SSID_BSSID_PMKID(
+                                payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos],
+                                pmkid=pmkid
+                            )
+                else:
+                    if(self.verbose):
+                        print('[-] No PMKID found for BSSID {}')
+            else: pass
+        else: pass
         return
 
     @classmethod
-    def add_SSID_BSSID_PMKID(self):
-        return
+    def add_SSID_BSSID_PMKID(self, payload=None, pmkid=None):
+        return payload.update({'pmkid':'{}'.format(pmkid)})
 
     @classmethod
     def find_SSID_BSSID_WPS(self):
