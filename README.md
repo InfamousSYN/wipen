@@ -4,24 +4,6 @@
 - live interrogation: Performs channel hopping for user-defined period; during which will perform target attribution based on user-defined values. 
 - pcap interrogation: Analyises an user-supplied PCAP file to perform target attribution based on user-defined values. During PCAP interrogation, `wipen` performs multiple parses of the PCAP to keep the overall memory usage low. 
 
-The result of the target attribution is to organise the interrogated information in an easily digestable JSON format to aid penetration testing activities and identifying information to report on. The JSON output builds following relationship: 
-1. performs a search for BSSID broadcasting target SSID
-2. performs a search for similar BSSID to known BSSID broadcasting target SSID
-3. performs a search for similar SSID pattern to target SSID and populate BSSID broadcasting the similar SSID
-4. Search for interesting metadata for parent level SSID and for each identified similar SSID per parent level SSID.
- - Map connected STA to known BSSID
-  - identify all SSID probed for by connected STA
-  - identify all EAP identities sent by connected STA
- - Populate PMKID information for known BSSID ( ON ROADMAP )
- - Populate WPS status ( ON ROADMAP )
-
-
-## Installation
-
-```Bash
-git clone https://github.com/InfamousSYN/wipen
-python3 -m install -r wipen/requirements.txt
-```
 
 ## Usage
 
@@ -87,95 +69,17 @@ Packet Processing Settings:
 ```
 
 
-### Output JSON Object Schema
+## Installation
 
-The JSON object produced by `wipen` will be in the following schema:  
-
-```
-{
-  "ssid":{
-      "bssid":[{
-              "bssid":str,
-              "frequency":int,
-              "protocol":str,
-              "authentication":str,
-              "associated_clients":[{
-                'client_addr':str,
-                'identities':[{
-                  'id':int,
-                  'identity':str
-                }],
-                'probes':[{
-                  'id':int,
-                  'probe':str
-                }],
-                'vendor':str
-              }],
-              "similar_bssid":[{
-                "ssid":str,
-                "bssid":str,
-                "protocol":str,
-                "frequency":int,
-                "authentication":str,
-                "vendor":str,
-                "times_seen":int,
-                "hidden_ssid":boolean,
-              }],
-              "pmkid":[],
-              "vendor":str,
-              "wps":str,
-              "times_seen":int,
-              "hidden_ssid":boolean
-          }],
-      "similar_ssid":[{
-        "ssid":{
-            "bssid":[{
-                    "bssid":str,
-                    "frequency":int,
-                    "protocol":str,
-                    "authentication":str,
-                    "associated_clients":[{
-                      'client_addr':str,
-                      'identities':[{
-                        'id':int,
-                        'identity':str,
-                        'bssid':str
-                      }],
-                      'probes':[{
-                        'id':int,
-                        'probe':str
-                      }],
-                      'vendor':str
-                    }],
-                    "similar_bssid":[{
-                      "ssid":str,
-                      "bssid":str,
-                      "protocol":str,
-                      "frequency":int,
-                      "authentication":str,
-                      "vendor":str,
-                      "times_seen":int,
-                      "hidden_ssid":boolean,
-                    }],
-                    "pmkid":[],
-                    "vendor":str,
-                    "wps":str,
-                    "times_seen":int,
-                    "hidden_ssid":boolean
-                }],
-            "similar_ssid":[]
-        }
-    }]
-  }
-}
+```Bash
+git clone https://github.com/InfamousSYN/wipen
+python3 -m install -r wipen/requirements.txt
 ```
 
-**Note:** To target a SSID which contains a space within the name, place the value within single quotes ( `'` ) for the `-s` argument.
 
+## Examples
 
-### Examples
-
-#### Live Interrogation
+### Live Interrogation
 
 Using the `-m 0` argument, `wipen` can be placed into live capture mode. In live capture mode, `wipen` will automatically channel hop for a defined period (`-T`); during which it will perform analysis of captured packets for target attribution. 
 
@@ -185,7 +89,7 @@ sudo python3 /opt/wipen/wipen.py -m 0 -i [INTERFACE] -o [OUTFILE] -s [TARGET SSI
 
 **Note:** By default, while in live mode, `wipen` will not save the collected packets to a PCAP file. The user can invoke `wipen` to create a PCAP using the `--save-pcap` argument for data posterity. 
 
-#### PCAP Interrogation
+### PCAP Interrogation
 
 Using the `-m 1` argument, `wipen` will interrogate a specified PCAP file of captured packets for target attribution. 
 
@@ -197,6 +101,176 @@ sudo python3 /opt/wipen/wipen.py -f [PCAP CAP] --ssid-pattern [P1] [P2] -s [TARG
 
 **Note:** When analysing a large PCAP file, it is recommended to use `tee` to pipe the STDOUT to a file for logging purposes. 
 
-### Additional tools
+
+## WIPEN JSON SCHEMA
+
+The result of the target attribution is to organise the interrogated information in an easily digestable JSON format to aid penetration testing activities and identifying information to report on. The JSON output builds following relationship: 
+1. The target SSID is added to blank object
+2. Any BSSID broadcasting target SSID are linked as list entries under the SSID
+3. Any STA connected to a broadcasting BSSID are linked as list entries under the BSSID 
+4. Any similar BSSID to linked BSSID are linked as list entries under the BSSID
+5. Any probes request from linked STA are linked as list entries under the STA
+6. Any EAPOL identity responses from linked STA are linked as list entries under the STA
+
+The above schema is replicated for similar SSID (based on user-specified naming convention), with the similar SSID JSON structure being linked as list entries under the target SSID. 
+
+The JSON object produced by `wipen` will be in the following schema:  
+
+```
+{
+    "SSID1":{
+        "bssid":[{
+            "bssid":"a4:9b:cd:13:98:41",
+            "frequency":149,
+            "protocol":"802.11ac",
+            "authentication":"WPA2/802.1X",
+            "associated_clients":[{
+                "client_addr":"5c:e9:1e:86:e1:73",
+                "identities":[{
+                    "identity":"bob",
+                    "metadata":{
+                        "_pid":"f9bdce2f-9bff-4f77-8cde-e34cf9388157",
+                        "_id":"e154ed56-deb8-43e3-abf6-c60740c62135",
+                        "_sid":[
+                        ],
+                        "_type":"identity"
+                    }
+                }],
+                "probes":[{
+                    "probe":"SSID2",
+                    "metadata":{
+                        "_pid":"f9bdce2f-9bff-4f77-8cde-e34cf9388157",
+                        "_id":"e154ed56-deb8-43e3-abf6-c60740c62135",
+                        "_sid":[
+                        ],
+                        "_type":"probe"
+                    }
+                }],
+                "vendor":null,
+                "metadata":{
+                    "_pid":"bc1b58d1-4f26-41a4-a4ab-b879c692717b",
+                    "_id":"f9bdce2f-9bff-4f77-8cde-e34cf9388157",
+                    "_sid":[
+                    ],
+                    "_type":"sta"
+                }
+            }],
+            "similar_bssid":[{
+                "ssid":"SSID2",
+                "bssid":"a4:9b:cd:13:98:40",
+                "protocol":"802.11ac",
+                "frequency":149,
+                "authentication":"WPA2/PSK",
+                "vendor":null,
+                "times_seen":1,
+                "hidden_ssid":false,
+                "metadata":{
+                    "_pid":null,
+                    "_id":null,
+                    "_sid":[
+                    ],
+                    "_type":"bssid"
+                }
+            }],
+            "pmkid":null,
+            "vendor":null,
+            "wps":"wps",
+            "times_seen":493,
+            "hidden_ssid":false,
+            "metadata":{
+                "_pid":"76027153-2e7e-4b5f-8082-6893e943f3ee",
+                "_id":"f094831c-5fa2-4b16-812a-4ec190c6cd33",
+                "_sid":[
+                ],
+                "_type":"bssid"
+            }
+        }],
+        "similar_ssid":[{
+            "SSID2":{
+                "bssid":[{
+                    "bssid":"a4:9b:cd:13:98:40",
+                    "frequency":149,
+                    "protocol":"802.11ac",
+                    "authentication":"WPA2/PSK",
+                    "associated_clients":[{
+                        "client_addr":"5c:e9:1e:86:e1:73",
+                        "identities":[],
+                        "probes":[{
+                            "probe":"SSID2",
+                            "metadata":{
+                                "_pid":null,
+                                "_id":"e154ed56-deb8-43e3-abf6-c60740c62135",
+                                "_sid":[
+                                ],
+                                "_type":"probe"
+                            }
+                        }],
+                        "vendor":null,
+                        "metadata":{
+                            "_pid":"bc1b58d1-4f26-41a4-a4ab-b879c692717b",
+                            "_id":"f9bdce2f-9bff-4f77-8cde-e34cf9388157",
+                            "_sid":[
+                            ],
+                            "_type":"sta"
+                        }
+                    }],
+                    "similar_bssid":[],
+                    "pmkid":null,
+                    "vendor":null,
+                    "wps":"wps",
+                    "times_seen":512,
+                    "hidden_ssid":false,
+                    "metadata":{
+                        "_pid":"9afc2c44-72e6-49cb-b18f-7db7aa3e8641",
+                        "_id":"bc1b58d1-4f26-41a4-a4ab-b879c692717b",
+                        "_sid":[
+                        ],
+                        "_type":"bssid"
+                    }
+                },
+            }],
+            "similar_ssid":[],
+            "metadata":{
+                "_pid":"76027153-2e7e-4b5f-8082-6893e943f3ee",
+                "_id":"9afc2c44-72e6-49cb-b18f-7db7aa3e8641",
+                "_sid":[
+                ],
+                "_type":null
+            }
+        }
+    }],
+        "metadata":{
+            "_pid":null,
+            "_id":"76027153-2e7e-4b5f-8082-6893e943f3ee",
+            "_sid":[
+            ],
+            "_type":"ssid",
+            "starttime":"2023-09-17 06:19:13.158616",
+            "endtime":"2023-09-17 06:19:13.158616"
+        }
+    }
+}
+```
+
+**Note:** To target a SSID which contains a space within the name, place the value within single quotes ( `'` ) for the `-s` argument.
+
+
+## Additional tools
 There are addition tools that can support `wipen`, or leverage the produced JSON object. For more information, refer to the tool's [README](https://github.com/InfamousSYN/wipen/blob/main/tools/README.md) documentation.
+
+## Roadmap
+  - Populate WPS status
+  - Improve processing workflow, by having target and similar searchs performed co-currently. With 3 reads of the PCAP file (currently there are 7 reads). 
+    - Read 1
+      - Merge target and similar SSID search
+      - Merge target and similar SSID BSSID search
+    - Read 2
+      - Merge target and similar client search
+      - Merge target and similar BSSID search
+    - Read 3
+      - Merge target and similar probe search
+      - Merge target and similar identity search
+      - Merge target and similar PMKID search
+      - Merge target and similar WPS search
+  - `--skip-similar-bssid` & `--skip-similar-ssid` arguments together
 
