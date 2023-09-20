@@ -64,7 +64,9 @@ if __name__ == '__main__':
             ignore_bssid=option['ignore_bssid'],
             ignore_client=option['ignore_client'],
             disable_vendor_mac_refresh=option['disable_vendor_mac_refresh'],
-            periodic_file_update=option['periodic_file_update'])
+            periodic_file_update=option['periodic_file_update'],
+            skip_similar=option['skip_similar'],
+        )
     
         # add each SSID in the runtime list to the JSON payload object
         for ssid in option['target_ssid']:
@@ -110,19 +112,6 @@ if __name__ == '__main__':
                         writeJSONPayload(
                             payload=wipen.getJSONPayload(),
                             filename=filename)
-    
-                if( (option['skip_similar']) ):
-                    print('[-] Searching for similar SSID to target SSID manually disabled...')
-                else:
-                    if( (option['ssid_pattern'] is not None) ):
-                        print('[+] Searching for similar SSID pattern to target SSID')
-                        sniff(offline=pcap_file, prn=wipen.find_SIMILAR_SSID_Handler, store=0)
-                        print('[-] Updating {} file with results of search for similar SSID to target SSID\r\n[-]'.format(filename))
-                        writeJSONPayload(
-                            payload=wipen.getJSONPayload(),
-                            filename=filename)
-                    else:
-                        print('[+] Search pattern for similar SSID to target SSID was not provided, skipping...')
     
                 if( (option['skip_similar']) ):
                     print('[-] Disabling searching for similar SSID to target SSID metadata...')

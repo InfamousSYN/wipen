@@ -261,9 +261,6 @@ There are addition tools that can support `wipen`, or leverage the produced JSON
 ## Roadmap
   - Populate WPS status
   - Improve processing workflow, by having target and similar searchs performed co-currently. With 3 reads of the PCAP file (currently there are 7 reads). 
-    - Read 1
-      - Merge target and similar SSID search
-      - Merge target and similar SSID BSSID search
     - Read 2
       - Merge target and similar client search
       - Merge target and similar BSSID search

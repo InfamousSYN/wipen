@@ -9,7 +9,7 @@ import mac_vendor_lookup
 
 class wipenParserClass():
     @classmethod
-    def __init__(self, verbose, depth, ssid_pattern, filename, ignore_bssid, ignore_client, disable_vendor_mac_refresh, periodic_file_update, **kwargs):
+    def __init__(self, verbose, depth, ssid_pattern, filename, ignore_bssid, ignore_client, disable_vendor_mac_refresh, periodic_file_update, skip_similar, **kwargs):
         import threading
         self.wipenJSONPayload = {}
         self.verbose = verbose
@@ -21,6 +21,7 @@ class wipenParserClass():
         self.ignore_client = ignore_client
         self.disable_vendor_mac_refresh = disable_vendor_mac_refresh
         self.periodic_file_update = periodic_file_update*60
+        self.skip_similar = skip_similar
 
         # Reset from tuple to list
         if(self.ssid_pattern[0] is not None):
@@ -360,7 +361,15 @@ class wipenParserClass():
 
     @classmethod
     def find_SSID_Handler(self, packet):
+        ##
+        ## This block searches the BSSID broadcasting either the target SSID, or
+        ## the similar SSID. Adding the identified BSSID to the list. 
+        ##
+
+        import re
         ssid=self.target_ssid
+
+        # Search for target SSID BSSID
         if( (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and (packet.addr2 not in self.ignore_bssid) and (packet.info.decode('utf-8') == ssid) ):
             
             if( (packet.addr2 not in self.deep_search(
@@ -392,62 +401,9 @@ class wipenParserClass():
             else:
                 if(self.verbose):
                     print('[-] Packet did not meet condition, skipping...')
-        else:
-            if(self.verbose):
-                print('[-] Packet did not meet condition, skipping...')
-
-    @classmethod
-    def find_SIMILAR_BSSID_Handler(self, packet):
-        try:
-            ssid=self.target_ssid
-
-            for _known_bssid_pos, _known_bssid in enumerate(self.wipenJSONPayload[ssid]['bssid']):
-                if( (self.wipenJSONPayload[ssid]['bssid'] is not []) and (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr2 not in self.ignore_bssid ) and (packet.addr2 != _known_bssid.get('bssid')) ):
-                    # remove the bssid deep search here
-
-                    mangled_packet_address = packet.addr3.split(':', self.depth)[:-1]
-                    mangled_target_address = _known_bssid.get('bssid').split(':', self.depth)[:-1]
-                    if((mangled_packet_address == mangled_target_address) and (packet.addr2 not in self.deep_search(
-                        target_key='bssid',
-                        payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['similar_bssid']
-                        )) ):
-                        print('[-] Found a similar BSSID for {}, adding...'.format(ssid))
-                        self.add_SIMILAR_BSSID_Entry(
-                            payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['similar_bssid'],
-                            similar_ssid=None if(not packet.info) else packet.info.decode('utf-8'),
-                            similar_bssid=packet.addr3,
-                            frequency=wipenParserClass.getChannel(packet.getlayer(RadioTap).ChannelFrequency) if(packet.getlayer(RadioTap)) else None,
-                            protocol=wipenParserClass.getStandard(standard=packet.getlayer(RadioTap).ChannelFlags, packet=packet) if packet.getlayer(RadioTap) else None,
-                            authentication=wipenParserClass.getAuthentication(packet),
-                            vendor=self.getVendor(bssid=packet.addr3),
-                            hidden_ssid=True if(not packet.info) else False,
-                            _pid=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['metadata'].get('_id'),
-                            _id=self.get_new_uuid(),
-                            _type=wipenParserClass.get_object_type(obj='bssid')
-                        )
-                    elif((mangled_packet_address == mangled_target_address) and (packet.addr2 not in self.deep_search(
-                        target_key='bssid',
-                        payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['similar_bssid']
-                        )) ):
-                        if(self.verbose):
-                            print('[-] Similar BSSID already known, skipping...')
-                        for _known_bssid_similiar_bssid_pos, _known_bssid_similiar_bssid in enumerate(self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['similar_bssid']):
-                            if(packet.addr2 == _known_bssid_similiar_bssid.get('bssid')):
-                                self.update_SSID_BSSID_TIMES_SEEN_Count(
-                                    payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]
-                                )
-                    else:
-                        if(self.verbose):
-                            print('[-] Packet did not meet condition, skipping...')
-        except:
-            raise
-
-    @classmethod
-    def find_SIMILAR_SSID_Handler(self, packet):
-        import re
-        ssid=self.target_ssid
-
-        if( (self.ssid_pattern[0] is not None) and (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr3 not in self.ignore_bssid ) and ( packet.info.decode('utf-8') != ssid and packet.info.decode('utf-8') is not None and packet.info.decode('utf-8') != '' ) ):
+        # search for similar SSID and similar SSID BSSID
+        elif( (not self.skip_similar) and 
+         (self.ssid_pattern[0] is not None) and (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr3 not in self.ignore_bssid ) and ( packet.info.decode('utf-8') != ssid and packet.info.decode('utf-8') is not None and packet.info.decode('utf-8') != '' ) ):
             for ssid_pattern in self.ssid_pattern:
                 if( (re.search(ssid_pattern, packet.info.decode('utf-8'), re.IGNORECASE)) 
                     and (packet.info.decode('utf-8') not in [next(iter(_known_similar_ssid)) for _known_similar_ssid in self.wipenJSONPayload[ssid]['similar_ssid']] ) ):
@@ -510,6 +466,56 @@ class wipenParserClass():
                 else:
                     if(self.verbose):
                         print('[-] Packet did not meet condition, skipping...')
+
+        else:
+            if(self.verbose):
+                print('[-] Packet did not meet condition, skipping...')
+
+    @classmethod
+    def find_SIMILAR_BSSID_Handler(self, packet):
+        try:
+            ssid=self.target_ssid
+
+            for _known_bssid_pos, _known_bssid in enumerate(self.wipenJSONPayload[ssid]['bssid']):
+                if( (self.wipenJSONPayload[ssid]['bssid'] is not []) and (packet.haslayer(Dot11Beacon) or packet.haslayer(Dot11ProbeResp)) and ( packet.addr2 not in self.ignore_bssid ) and (packet.addr2 != _known_bssid.get('bssid')) ):
+                    # remove the bssid deep search here
+
+                    mangled_packet_address = packet.addr3.split(':', self.depth)[:-1]
+                    mangled_target_address = _known_bssid.get('bssid').split(':', self.depth)[:-1]
+                    if((mangled_packet_address == mangled_target_address) and (packet.addr2 not in self.deep_search(
+                        target_key='bssid',
+                        payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['similar_bssid']
+                        )) ):
+                        print('[-] Found a similar BSSID for {}, adding...'.format(ssid))
+                        self.add_SIMILAR_BSSID_Entry(
+                            payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['similar_bssid'],
+                            similar_ssid=None if(not packet.info) else packet.info.decode('utf-8'),
+                            similar_bssid=packet.addr3,
+                            frequency=wipenParserClass.getChannel(packet.getlayer(RadioTap).ChannelFrequency) if(packet.getlayer(RadioTap)) else None,
+                            protocol=wipenParserClass.getStandard(standard=packet.getlayer(RadioTap).ChannelFlags, packet=packet) if packet.getlayer(RadioTap) else None,
+                            authentication=wipenParserClass.getAuthentication(packet),
+                            vendor=self.getVendor(bssid=packet.addr3),
+                            hidden_ssid=True if(not packet.info) else False,
+                            _pid=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['metadata'].get('_id'),
+                            _id=self.get_new_uuid(),
+                            _type=wipenParserClass.get_object_type(obj='bssid')
+                        )
+                    elif((mangled_packet_address == mangled_target_address) and (packet.addr2 not in self.deep_search(
+                        target_key='bssid',
+                        payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['similar_bssid']
+                        )) ):
+                        if(self.verbose):
+                            print('[-] Similar BSSID already known, skipping...')
+                        for _known_bssid_similiar_bssid_pos, _known_bssid_similiar_bssid in enumerate(self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['similar_bssid']):
+                            if(packet.addr2 == _known_bssid_similiar_bssid.get('bssid')):
+                                self.update_SSID_BSSID_TIMES_SEEN_Count(
+                                    payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]
+                                )
+                    else:
+                        if(self.verbose):
+                            print('[-] Packet did not meet condition, skipping...')
+        except:
+            raise
 
     @classmethod
     def find_Connected_Client_Handler(self,packet=None):
