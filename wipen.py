@@ -52,7 +52,7 @@ if __name__ == '__main__':
             save_pcap=option['save_pcap'], 
             output_pcap=option['output_pcap'], 
             verbose=option['verbose'],
-            skip_similar_ssid=option['skip_similar_ssid'],
+            skip_similar=option['skip_similar'],
         ).main()
     elif(option['mode'] == 1):
         filename = '{}.json'.format(option['output_filename'])
@@ -101,7 +101,7 @@ if __name__ == '__main__':
                         payload=wipen.getJSONPayload(),
                         filename=filename)
                 else:
-                    if( (option['skip_similar_bssid']) ):
+                    if( (option['skip_similar']) ):
                         print('[-] Searching for similar BSSID to BSSID broadcasting target SSID manually disabled...')
                     else:
                         print('[+] Searching for similar BSSID to known target SSID\'s BSSID')
@@ -111,7 +111,7 @@ if __name__ == '__main__':
                             payload=wipen.getJSONPayload(),
                             filename=filename)
     
-                if( (option['skip_similar_ssid']) ):
+                if( (option['skip_similar']) ):
                     print('[-] Searching for similar SSID to target SSID manually disabled...')
                 else:
                     if( (option['ssid_pattern'] is not None) ):
@@ -124,7 +124,7 @@ if __name__ == '__main__':
                     else:
                         print('[+] Search pattern for similar SSID to target SSID was not provided, skipping...')
     
-                if( (option['skip_similar_ssid']) ):
+                if( (option['skip_similar']) ):
                     print('[-] Disabling searching for similar SSID to target SSID metadata...')
                     wipen._enable_SIMILAR_SSID_METADATA_SEARCH(status=False)
                 else:

@@ -272,5 +272,4 @@ There are addition tools that can support `wipen`, or leverage the produced JSON
       - Merge target and similar identity search
       - Merge target and similar PMKID search
       - Merge target and similar WPS search
-  - `--skip-similar-bssid` & `--skip-similar-ssid` arguments together
 

@@ -101,18 +101,11 @@ class wipenOptionClass():
 
         processingOptions = parser.add_argument_group(title='Packet Processing Settings', description='Control the level of interrogation that is performed per packet')
 
-        processingOptions.add_argument('--skip-similar-bssid',
-            dest='skip_similar_bssid',
+        processingOptions.add_argument('--skip-similar',
+            dest='skip_similar',
             action='store_true',
             default=False,
-            help='Skip searching for similar BSSID'
-        )
-
-        processingOptions.add_argument('--skip-similar-ssid',
-            dest='skip_similar_ssid',
-            action='store_true',
-            default=False,
-            help='Skip searching for similar SSID'
+            help='Skip searching for similar BSSID and similar SSID'
         )
 
         processingOptions.add_argument('-s', '--ssid',
