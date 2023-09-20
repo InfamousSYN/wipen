@@ -151,7 +151,14 @@ if __name__ == '__main__':
                 writeJSONPayload(
                     payload=wipen.getJSONPayload(),
                     filename=filename)
-    
+
+                print('[+] Searching for PMKID from known BSSID')
+                sniff(offline=pcap_file, prn=wipen.find_SSID_BSSID_PMKID, store=0)
+                print('[-] Updating {} file with results of PMKID search\r\n[-]'.format(filename))
+                writeJSONPayload(
+                    payload=wipen.getJSONPayload(),
+                    filename=filename)
+
                 print('[-] Ending runtime job for \'{}\' and \'{}\' task completed'.format(ssid, pcap_file))
                 print('[-] Updating {} with final JSON payload for \'{}\' and closing\r\n[-]'.format(filename, ssid))
                 writeJSONPayload(
@@ -159,6 +166,7 @@ if __name__ == '__main__':
                     filename=filename)
     
         print('[-] Final update of {} and closing\r\n[-]'.format(filename))
+        wipen.update_SSID_ENDTIME(ssid=ssid)
         writeJSONPayload(
             payload=wipen.getJSONPayload(),
             filename=filename)
