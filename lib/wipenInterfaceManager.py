@@ -6,7 +6,7 @@ from lib.parser import wipenParser
 class InterfaceManager():
 
     @classmethod
-    def __init__(self, save_pcap=False, output_pcap=None, ssid_scope=None, interface=None, hop_rate=None, capture_length=None, verbose=None, revert_interface=True, filename=None, depth=None, ignore_bssid=None, ignore_client=None, ssid_pattern=None, disable_vendor_mac_refresh=None, periodic_file_update=None, skip_similar_ssid=False):
+    def __init__(self, save_pcap=False, output_pcap=None, ssid_scope=None, interface=None, hop_rate=None, capture_length=None, verbose=None, revert_interface=True, filename=None, depth=None, ignore_bssid=None, ignore_client=None, ssid_pattern=None, disable_vendor_mac_refresh=None, periodic_file_update=None, skip_similar=False):
         self.stop_hop = False
         self.save_pcap=save_pcap
         self.output_pcap=output_pcap
@@ -25,7 +25,7 @@ class InterfaceManager():
         self.ignore_client=ignore_client
         self.disable_vendor_mac_refresh=disable_vendor_mac_refresh
         self.periodic_file_update=periodic_file_update
-        self.skip_similar_ssid=skip_similar_ssid
+        self.skip_similar=skip_similar
 
     @staticmethod
     def ifaceUp(interface):
@@ -164,7 +164,7 @@ class InterfaceManager():
         self.parser.find_SIMILAR_BSSID_Handler(packet=packet)
         self.parser.find_SIMILAR_SSID_Handler(packet=packet)
 
-        if( self.skip_similar_ssid ):
+        if( self.skip_similar ):
             self.parser._enable_SIMILAR_SSID_METADATA_SEARCH(status=False)
         else:
             self.parser._enable_SIMILAR_SSID_METADATA_SEARCH(status=True)
