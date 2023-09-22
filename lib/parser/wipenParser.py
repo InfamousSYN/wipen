@@ -718,13 +718,13 @@ class wipenParserClass():
                 if( (client_address == _known_associated_client.get('client_addr') ) and ( packet.getlayer(EAP).identity.decode('utf-8') not in self.deep_search(
                         target_key='identity', 
                         payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['associated_clients'][_known_associated_client_pos]['identities']
-                    )) ):
+                    )) and (bssid_address == _known_bssid.get('bssid')) ):
 
                     print('[-] Found new identity for \'{}\' by client \'{}\' connected to {}\'s \'{}\' BSSID, adding...'.format(packet.getlayer(EAP).identity.decode('utf-8'), client_address, ssid, bssid_address))
                     self.add_CONNECTED_CLIENTS_IDENTITY(
                         payload=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['associated_clients'][_known_associated_client_pos]['identities'],
                         identity=packet.getlayer(EAP).identity.decode('utf-8'),
-                        _pid=None,
+                        _pid=self.wipenJSONPayload[ssid]['bssid'][_known_bssid_pos]['metadata'].get('_id'),
                         _id=self.get_new_uuid(),
                         _type=wipenParserClass.get_object_type(obj='identity')
                         )
@@ -744,12 +744,12 @@ class wipenParserClass():
                         if( ( client_address == _known_similar_ssid_bssid_associated_client.get('client_addr') ) and (packet.getlayer(EAP).identity.decode('utf-8') not in self.deep_search(
                             target_key='identity', 
                             payload=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['associated_clients'][_known_similar_ssid_bssid_associated_client_pos]['identities']
-                        )) ):
+                        )) and (bssid_address == _known_bssid.get('bssid')) ):
                             print('[-] Found new identity for \'{}\' by client \'{}\' connected to {}\'s \'{}\' BSSID, adding...'.format(packet.getlayer(EAP).identity.decode('utf-8'), client_address, next(iter(_known_similar_ssid)), bssid_address))
                             self.add_CONNECTED_CLIENTS_IDENTITY(
                                 identity=packet.getlayer(EAP).identity.decode('utf-8'),
                                 payload=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['associated_clients'][_known_similar_ssid_bssid_associated_client_pos]['identities'],
-                                _pid=None,
+                                _pid=self.wipenJSONPayload[ssid]['similar_ssid'][_known_similar_ssid_pos][next(iter(_known_similar_ssid))]['bssid'][_known_similar_ssid_bssid_pos]['metadata'].get('_id'),
                                 _id=self.get_new_uuid(),
                                 _type=wipenParserClass.get_object_type(obj='identity')
                                 )
