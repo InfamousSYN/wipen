@@ -68,6 +68,8 @@ Packet Processing Settings:
 
 ```
 
+**Note:** To target a SSID which contains a space within the name, place the value within single quotes ( `'` ) for the `-s` argument.
+
 
 ## Installation
 
@@ -252,7 +254,7 @@ The JSON object produced by `wipen` will be in the following schema:
 }
 ```
 
-**Note:** To target a SSID which contains a space within the name, place the value within single quotes ( `'` ) for the `-s` argument.
+**Note:** The parent of an `identity` [dict](https://docs.python.org/3/tutorial/datastructures.html#dictionaries) is the `bssid` not the `sta`. 
 
 
 ## Additional tools
