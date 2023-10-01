@@ -53,6 +53,7 @@ if __name__ == '__main__':
             output_pcap=option['output_pcap'], 
             verbose=option['verbose'],
             skip_similar=option['skip_similar'],
+            reverse_bssid=option['reverse_bssid'],
         ).main()
     elif(option['mode'] == 1):
         filename = '{}.json'.format(option['output_filename'])
@@ -66,6 +67,7 @@ if __name__ == '__main__':
             disable_vendor_mac_refresh=option['disable_vendor_mac_refresh'],
             periodic_file_update=option['periodic_file_update'],
             skip_similar=option['skip_similar'],
+            reverse_bssid=option['reverse_bssid'],
         )
     
         # add each SSID in the runtime list to the JSON payload object

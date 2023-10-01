@@ -50,6 +50,13 @@ class wipenOptionClass():
             help='Set periodic update for output file time in minutes (default: {})'.format(settings.DEFAULT_PERIODIC_FILE_UPDATE_TIMER)
         )
 
+        wipenGeneralOptions.add_argument('--disable-reverse',
+            dest='reverse_bssid',
+            action='store_false',
+            default=True,
+            help='Disable reverse searching bssid matching pairs when looking for similar bssid'
+        )
+
         sourceMode = parser.add_argument_group(title='Packet Source Settings', description='Specify source for targeting information')
         sourceMode.add_argument('-m', choices=[0,1], dest='mode', type=int, help='0 = live, 1 = pcap', required=True)
 
