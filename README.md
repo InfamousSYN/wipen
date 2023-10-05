@@ -229,8 +229,8 @@ The JSON object produced by `wipen` will be in the following schema:
                         ],
                         "_type":"bssid"
                     }
-                },
-            }],
+                }
+            ],
             "similar_ssid":[],
             "metadata":{
                 "_pid":"76027153-2e7e-4b5f-8082-6893e943f3ee",
