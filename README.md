@@ -104,7 +104,7 @@ sudo python3 /opt/wipen/wipen.py -f [PCAP CAP] --ssid-pattern [P1] [P2] -s [TARG
 **Note:** When analysing a large PCAP file, it is recommended to use `tee` to pipe the STDOUT to a file for logging purposes. 
 
 
-## WIPEN JSON SCHEMA
+## Sample raw JSON schema
 
 The result of the target attribution is to organise the interrogated information in an easily digestable JSON format to aid penetration testing activities and identifying information to report on. The JSON output builds following relationship: 
 1. The target SSID is added to blank object
@@ -116,7 +116,7 @@ The result of the target attribution is to organise the interrogated information
 
 The above schema is replicated for similar SSID (based on user-specified naming convention), with the similar SSID JSON structure being linked as list entries under the target SSID. 
 
-The JSON object produced by `wipen` will be in the following schema:  
+The raw JSON object produced by `wipen` will be in the following schema:  
 
 ```
 {
@@ -255,6 +255,21 @@ The JSON object produced by `wipen` will be in the following schema:
 ```
 
 **Note:** The parent of an `identity` [dict](https://docs.python.org/3/tutorial/datastructures.html#dictionaries) is the `bssid` not the `sta`. 
+
+### Sample JQ Queries
+
+The [jq](https://github.com/jqlang/jq) utility can be used to parse the raw JSON object for interesting information. The above sample raw JSON object can be saved to a file and used to test the following queries. 
+
+
+This query will extract a list of each probe, and then use the `sort` command to display only the unique probe requests.
+```bash
+jq -r '.. | if type == "object" and has("metadata") and .metadata._type == "probe" then .probe else empty end' test_struct.json |sort -u
+```
+
+This query will extract a list of each identity, and then use the `sort` command to display only the unique identities.
+```bash
+jq -r '.. | if type == "object" and has("metadata") and .metadata._type == "identity" then .identity else empty end' test/test_struct.json |sort -u
+```
 
 
 ## Additional tools
