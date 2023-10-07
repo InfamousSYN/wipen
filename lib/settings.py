@@ -2,7 +2,7 @@
 import os
 
 # Application Version
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 
 # Directory Mapping
 root_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'wipen'))
